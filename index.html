@@ -308,6 +308,9 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
  f('Пробіг',km!=null?km.toLocaleString('uk-UA')+' км':(l?'немає даних':'—'),km>50000?'bad':'');
  f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
  f('Комплектація',trim);
+ // Оснащення за VIN: у Tesla немає пакетів опцій, версія визначає все
+ const eq=code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
+ if(eq)f('Оснащення',eq[0],eq[1]);
  f('Зарядка AC',(v?.BatteryInfo||'').replace(/Onboard Charger:\s*/,''));
  f('Завод',v?.PlantCity?`${v.PlantCity[0]+v.PlantCity.slice(1).toLowerCase()}, ${v.PlantCountry==='UNITED STATES (USA)'?'США':v.PlantCountry}`:'');
  if(l){f('Пошкодження',l.dmg,/flood|burn|rollover/i.test(l.dmg)?'bad':'');
