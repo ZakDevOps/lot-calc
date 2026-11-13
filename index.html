@@ -190,9 +190,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
-<script src="caucasus.js?v=202611132329"></script>
-<script src="sold.js?v=202611132329"></script>
-<script src="lots.js?v=202611132329"></script>
+<script src="caucasus.js?v=202611132334"></script>
+<script src="sold.js?v=202611132334"></script>
+<script src="lots.js?v=202611132334"></script>
 <script>
 // Збори аукціону з калькулятора MZ (ставка → збір), між точками — лінійно
 const FEES={Copart:[[10000,1168],[14000,1288],[16000,1246],[18000,1372],[20000,1498],[22000,1624],[24000,1750],[26000,1876]],
@@ -466,11 +466,11 @@ function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||''
 function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
  const have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
  const fs=L.firstSeen||{},since=L.newSince||'';
- const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>(fs[l.lot]||L.baseDate||'')>=since&&l.vin[5]==='D'&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&l.vin[5]==='D'&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
   &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
   .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
- if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів з ${since.slice(8)}.${since.slice(5,7)} поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
- el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · з'явились після ${since.slice(8)}.${since.slice(5,7)} · знімок ${L.updated}</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
+ if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
+ el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · нові з останнього оновлення</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
   return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
  if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
  const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
