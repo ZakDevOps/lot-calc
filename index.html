@@ -53,7 +53,25 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 .stat{background:var(--bg);border-radius:14px;padding:12px}
 .stat b{display:block;font-size:20px;font-weight:800}
 .stat span{font-size:12px;color:var(--mut);font-weight:600}
-@media (max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}.big{font-size:42px}.hide-s{display:none}}
+.sticky{display:none}
+@media (max-width:560px){
+ body{padding-bottom:76px}
+ .hero{padding:20px 16px 56px}.hero h1{font-size:23px}.hero p{font-size:13px}
+ main{margin-top:-40px}
+ .card{padding:16px;border-radius:16px}
+ .grid{grid-template-columns:1fr 1fr;gap:10px}
+ .grid label:has(#name){grid-column:1/-1}
+ input,select{font-size:16px;padding:9px 10px}
+ .chip{padding:7px 11px;font-size:12.5px}
+ .stats{grid-template-columns:repeat(2,1fr)}.stat b{font-size:18px}
+ .big{font-size:42px}.hide-s{display:none}
+ td,th{padding:9px 4px}
+ .btn{width:100%}
+ .sticky{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
+ .sticky b{font-size:24px;font-weight:800}.sticky .mut{font-size:11px}
+ .sticky a{font-size:13px;font-weight:700;color:var(--acc);text-decoration:none;white-space:nowrap}
+}
 .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--mut)}
 .pill.awd{background:rgba(5,150,105,.12);color:var(--ok)}
 .pill.perf{background:rgba(225,29,72,.12);color:var(--bad)}
@@ -66,7 +84,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 
 <div class="card">
 <h2>🔗 Лот</h2>
-<div class="url"><input id="url" placeholder="Вставте посилання з Copart, IAAI або bid.cars"></div>
+<div class="url"><input id="url" placeholder="Посилання Copart / IAAI / bid.cars"></div>
 <div id="info"></div>
 <div id="links" class="links"></div>
 <div class="grid sec">
@@ -79,7 +97,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <div class="grid sec"><label>Ремонт, $<input id="repair" type="number" value="4000"></label></div>
 </div>
 
-<div class="card result">
+<div class="card result" id="result">
 <div class="mut">Максимальна ставка, щоб уміститися в <span id="budgetLbl"></span></div>
 <div class="big" id="max">—</div>
 <div class="cmp" id="cmp"></div>
@@ -119,6 +137,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <p class="mut">Ближніми вважаються штати східного узбережжя: <span id="nearList"></span>. Якщо MZ рахує інакше, оберіть доставку вручну.</p>
 </details>
 </div>
+<div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↑</a></div>
 <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
 </main>
 <script src="sold.js"></script>
@@ -196,10 +215,11 @@ const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[
 function renderSold(maxB){const S=window.SOLD,R=sold();
  if(S)$('soldMeta').textContent=`Tesla Model Y 2026 з архіву bid.cars · оновлено ${S.updated} · ${S.rows.length} продажів за 7 днів`;
  const b=R.map(r=>r.bid);
- if(!b.length){$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
+ if(!b.length){$('stickyCmp').textContent='';$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
  const m=med(b),under=maxB>0?b.filter(x=>x<=maxB).length:0;
  $('stats').innerHTML=[['Продажів',R.length],['Медіана',fmt(m)],['Мін',fmt(Math.min(...b))],['Макс',fmt(Math.max(...b))]].map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
  const pct=Math.round(under/b.length*100);
+ $('stickyCmp').textContent=maxB>0?`шанс ~${pct}% · медіана ${fmt(m)}`:'';
  $('cmp').innerHTML=maxB>0?`${pct>=50?'✅':pct>=25?'⚠️':'❌'} ${under} з ${b.length} схожих лотів (${pct}%) продались за цю суму або дешевше · медіана ${fmt(m)}`:'';
  const list=[...R].sort((a,b)=>b.date.localeCompare(a.date)||b.bid-a.bid),show=showAll?list:list.slice(0,12);
  $('more').style.display=list.length>12?'':'none';$('more').textContent=showAll?'Згорнути':`Показати всі ${list.length}`;
@@ -211,6 +231,7 @@ $('more').onclick=()=>{showAll=!showAll;run();};
 function run(){const o=opts(),b=maxBid(o);
  $('budgetLbl').textContent=fmt(o.budget)+' під ключ';
  $('max').textContent=b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
+ $('stickyMax').textContent=$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
  renderSold(b);renderList();paint();}
 function renderList(){const L=store.get();$('empty').style.display=L.length?'none':'block';
