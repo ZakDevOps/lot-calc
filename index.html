@@ -155,7 +155,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="pane" id="p-set">
    <div class="grid">
     <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option></select></label>
-    <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="900"></label>
+    <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="500"></label>
     <label>Брокер / комісія, $<input id="broker" type="number" value="500"></label>
     <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
     <label>Запас, $<input id="buf" type="number" value="500"></label>
@@ -244,13 +244,16 @@ const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'
 $('doc').addEventListener('change',run);
 // Налаштування зберігаються в браузері: спільні — для всіх, решта — окремо для кожного перевізника
 const SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
-const DEF={caucasus:{broker:500,svc:0,uaDel:900,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400}};
+const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400}};
 const cfg={get(){try{return JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('cfg',JSON.stringify(v))}catch(e){}}};
 const val=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
 const put=(id,v)=>{if(v==null)return;$(id).type==='checkbox'?$(id).checked=v:$(id).value=v;};
 function saveCfg(){const c=cfg.get(),car=$('carrier').value;c.carrier=car;c.shared=Object.fromEntries(SHARED.map(k=>[k,val(k)]));c[car]=Object.fromEntries(PER.map(k=>[k,val(k)]));cfg.set(c);}
 function loadCarrier(car){const c=cfg.get();const v={...DEF[car],...(c[car]||{})};PER.forEach(k=>put(k,v[k]));}
-(function(){const c=cfg.get();if(c.carrier)$('carrier').value=c.carrier;Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
+(function(){const c=cfg.get();
+ // Стара стандартна сума 900 → 500 (Клайпеда → Львів + Львів → Франківськ ~$100)
+ if(c.caucasus&&+c.caucasus.uaDel===900){c.caucasus.uaDel=500;cfg.set(c);}
+ if(c.carrier)$('carrier').value=c.carrier;Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
 $('carrier').addEventListener('change',()=>{loadCarrier($('carrier').value);saveCfg();run();});
 [...SHARED,...PER].forEach(id=>$(id).addEventListener(id==='vat'||id==='pens'?'change':'input',saveCfg));
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
@@ -351,7 +354,7 @@ function cauShip(o){const T=window.CAUCASUS.ship[o.auc]||{},st=o.state,city=((o.
 function cauFee(a,p){const t=window.CAUCASUS.fees[a];if(p<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
 function calcCau(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),[sh,yard]=cauShip(o),ins=(p+f)*C.insurance,ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100;
  const rows=[['Ставка',p],['Збір '+o.auc,f],[`Доставка ${yard?yard[0]+yard.slice(1).toLowerCase():(o.ship==='near'?'ближній штат':'дальній штат')} → Клайпеда`,sh],['Страховка вантажу 0,9%',ins],['Експедитор',C.expeditor],
-  ['Клайпеда → Івано-Франківськ (порт, брокер, стоянка, доставка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+  ['Клайпеда → Франківськ (порт, брокер, стоянка, доставка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
  if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
  return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
 function calc(p,o){if(o.carrier==='caucasus')return calcCau(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
