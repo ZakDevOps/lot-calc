@@ -157,7 +157,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="tabs"><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
   <div class="pane on" id="p-sold">
    <div class="mut" id="soldMeta"></div>
-   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fPrice"></span></div>
+   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fTrim"></span><span class="chips" id="fPrice"></span></div>
    <div class="mut" id="priceNote" style="margin-top:6px"></div>
    <div class="stats" id="stats"></div>
    <div class="wrap"><table id="sold"></table></div>
@@ -215,7 +215,7 @@ const STATES='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA 
 const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' '));
 const DMG=[['Легке',2000,'front'],['Перед',4000,'front'],['Зад',4000,'rear'],['Бік',5000,'side'],['Важке',7000,'front']];
 const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
-let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, showAll=false;
+let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, fTrim='premium', showAll=false;
 let keyS='yes', startS='run', flags=new Set(), curLot=null;
 // Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
 const DOCS=[
@@ -275,6 +275,8 @@ $('carrier').addEventListener('change',()=>{loadCarrier($('carrier').value);save
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
 chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
+// Комплектація за VIN (6-й символ): D — Premium, A — Standard
+chips($('fTrim'),[['Тільки Premium','premium'],['Усі комплектації','all']],v=>fTrim=v,v=>fTrim===v);
 // Ціна: показувати продажі поруч із нашою максимальною ставкою
 chips($('fPrice'),[['±$1k від ставки',1000],['±$2k',2000],['Усі ціни',0]],v=>fPrice=v,v=>fPrice===v);
 function paint(){document.querySelectorAll('.chip').forEach(b=>{if(b._on)b.classList.toggle('on',!!b._on(b._v));});}
@@ -390,7 +392,7 @@ const stOf=loc=>((loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
 const DMG_UA={front:'перед',rear:'зад',side:'бік',other:'інше'};
 function sold(){const S=window.SOLD;if(!S){$('soldMeta').textContent='Дані про продажі не завантажились.';return [];}
  const C=S.cols,rows=S.rows.map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]])));
- return rows.filter(r=>(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)&&(fDrv==='all'||(r.vin||'')[7]===fDrv));}
+ return rows.filter(r=>(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)&&(fDrv==='all'||(r.vin||'')[7]===fDrv)&&(fTrim==='all'||(r.vin||'')[5]==='D'));}
 const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
 function renderSold(maxB){const S=window.SOLD,R=sold();
  if(S)$('soldMeta').textContent=`Tesla Model Y 2026 з архіву bid.cars · оновлено ${S.updated} · ${S.rows.length} продажів за 7 днів`;
