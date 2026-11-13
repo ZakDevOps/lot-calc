@@ -78,6 +78,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 .facts div{font-size:13px;font-weight:700}.facts span{display:block;font-size:10.5px;color:var(--mut);font-weight:700}
 .facts .bad{color:var(--bad)}.facts .ok{color:var(--ok)}
 /* Вкладки */
+#list tr.act td{background:rgba(79,70,229,.14)}#list tr.act td:first-child{box-shadow:inset 3px 0 0 var(--acc);border-radius:8px 0 0 8px}#list tr.act td:last-child{border-radius:0 8px 8px 0}#list tr.act a.open{color:var(--acc)}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 12px}
@@ -433,11 +434,13 @@ function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=win
  return back?{v:null,src:`не продано за ${fmt(r[3])}, знову на аукціоні`}:{v:r[3],src:'bid.cars '+r[0].slice(5).split('-').reverse().join('.')};}
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
+ // Лот, відкритий зараз у калькуляторі, підсвічуємо
+ const cu=$('url').value.trim(),cr=parse(cu);let act=L.findIndex(x=>x.url&&x.url===cu);if(act<0&&cr?.lot)act=L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===cr.lot);
  const rows=L.map((x,i)=>{const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[],state:x.state,loc:xl?.loc}));
   const u=`<a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
   const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
   const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
-  return `<tr><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
+  return `<tr class="${i===act?'act':''}"><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
    <td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td>
    <td class="r"><span class="money" style="width:105px;display:inline-block"><input class="price" data-i="${i}" type="number" placeholder="${sf?.v&&!x.price?Math.round(sf.v):'—'}" value="${x.price||''}"></span>
     <div class="mut">${sf?(x.price?'вручну':sf.src):'ще не продано'}${st?' · '+st:''}</div></td>
