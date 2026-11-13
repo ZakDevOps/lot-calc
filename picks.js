@@ -5,4 +5,5 @@ window.PICKS={"updated":"2026-11-13","note":"AWD, без Flood/Burn/Bill of sale
 ["0-45305519","Tulsa (OK) · Front · 3,6 тис. км · ключ","State Farm"],
 ["1-73338546","Trenton (NJ) · Front · 4,5 тис. км · без ключа","USAA"],
 ["1-75547276","Glassboro (NJ) · Front · 8,5 тис. км · без ключа","Insurance Company"],
-["1-65860156","Somerville (NJ) · Front · 16 тис. км · без ключа","Insurance Company"]]};
+["1-65860156","Somerville (NJ) · Front · 16 тис. км · без ключа","Insurance Company"],
+["0-45959400","Atlanta North (GA) · Left front · без ключа · ⚠️ продає дилер","Non-insurance Company"]]};
