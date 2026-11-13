@@ -395,7 +395,10 @@ function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderOdds(b,R.stop);renderList();renderPicks();paint();}
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderPicks();paint();}
+// Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
+function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
+ Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
 function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=window.SOLD;if(!S||!x.lot)return null;
  const r=S.rows.find(r=>r[1].endsWith('-'+x.lot));if(!r)return null;
  // Лот знову на аукціоні — значить, ту ставку продавець не прийняв
