@@ -40,12 +40,16 @@ input:focus,select:focus{border-color:var(--acc)}
 .chip:hover{border-color:var(--acc)}
 .chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
 .chip.danger.on{background:var(--bad);border-color:var(--bad)}
-.money{position:relative;width:110px;flex:none}.inl .money input{width:100%;padding-left:20px}.money:before{content:'$';position:absolute;left:9px;top:8px;color:var(--mut);font-weight:700}
+.money{position:relative;width:110px;flex:none}.money input{width:100%;padding-left:20px}.money:before{content:'$';position:absolute;left:9px;top:8px;color:var(--mut);font-weight:700}
 /* Результат */
 .result{background:linear-gradient(160deg,rgba(79,70,229,.10),rgba(6,182,212,.06)),var(--card);border-color:rgba(79,70,229,.3)}
 .big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:2px 0 6px}
 .ok{color:var(--ok)}.bad{color:var(--bad)}
 .cmp{font-size:13px;font-weight:700;margin-bottom:10px}
+.budget{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line);font-weight:800;font-size:13.5px}.budget .money{width:130px}.budget input{font-weight:800;font-size:15px}
+.odds{display:grid;grid-template-columns:1fr auto;gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12.5px}
+.odds b{font-size:14px;text-align:right}.odds .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:800;font-size:13px}.odds .d{grid-column:1/-1;color:var(--mut);font-size:11.5px;margin-top:-4px}
+.bar{height:6px;border-radius:9px;background:var(--chip);overflow:hidden;grid-column:1/-1;margin-top:-2px}.bar i{display:block;height:100%;background:var(--acc)}
 .w{border-radius:10px;padding:8px 10px;margin:0 0 6px;font-size:12.5px;line-height:1.4}
 .w b{display:block;font-size:13px}
 .w.stop{background:rgba(225,29,72,.1);border:1px solid rgba(225,29,72,.35)}
@@ -142,7 +146,6 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   </div>
   <div class="pane" id="p-set">
    <div class="grid">
-    <label>Бюджет під ключ, $<input id="budget" type="number" value="30000"></label>
     <label>Брокер, $<input id="broker" type="number" value="300"></label>
     <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
     <label>Запас, $<input id="buf" type="number" value="500"></label>
@@ -159,11 +162,13 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 
 <div class="side">
  <div class="card result" id="result">
-  <div class="mut">Максимальна ставка · бюджет <span id="budgetLbl"></span></div>
+  <div class="budget"><span>Бюджет під ключ</span><span class="money"><input id="budget" type="number" value="30000" step="500"></span></div>
+  <div class="mut">Максимальна ставка</div>
   <div class="big" id="max">—</div>
-  <div class="cmp" id="cmp"></div>
+  <div class="cmp" id="cmp" hidden></div>
+  <div class="odds" id="odds"></div>
   <div id="warn"></div>
-  <details open id="brd"><summary>Розбивка витрат</summary><table id="br"></table></details>
+  <details id="brd"><summary>Розбивка витрат</summary><table id="br"></table></details>
   <div class="addrow"><input id="name" placeholder="Назва лота"><button class="btn" id="add">＋ Додати</button></div>
  </div>
  <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
@@ -183,7 +188,7 @@ const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' 
 const DMG=[['Легке',2000,'front'],['Перед',4000,'front'],['Зад',4000,'rear'],['Бік',5000,'side'],['Важке',7000,'front']];
 const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
 let ship='near', fDmg='all', fReg='all', fDrv='all', showAll=false;
-let keyS='yes', startS='run', flags=new Set();
+let keyS='yes', startS='run', flags=new Set(), curLot=null;
 // Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
 const DOCS=[
  ['salvage','Salvage / SC / SV / ST / SM / S1 / RB','ok',0,'Звичайний документ для битих авто. Експорт і розмитнення в Україні без проблем.'],
@@ -238,7 +243,7 @@ function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  if(m=u.match(/lot\/\d+\/[^?#]*?-([a-z]{2})-[a-z-]+\/?(?:[?#]|$)/i))if(STATES.includes(m[1].toUpperCase()))r.state=m[1].toUpperCase();
  return r;}
 const ver=vin=>({E:'AWD',D:'RWD',T:'Performance'})[(vin||'')[7]]||'?';
-function onUrl(){const r=parse($('url').value);if(!r){$('info').innerHTML='';$('links').innerHTML='';run();return;}
+function onUrl(){const r=parse($('url').value);if(!r){curLot=null;$('info').innerHTML='';$('links').innerHTML='';run();return;}
  if(r.auc)$('auc').value=r.auc;
  if(r.state){$('state').value=r.state;ship=NEAR.has(r.state)?'near':'far';}
  if(r.vin){const v=(r.vin||'')[7];if('EDT'.includes(v))fDrv=v;}
@@ -254,7 +259,7 @@ function onUrl(){const r=parse($('url').value);if(!r){$('info').innerHTML='';$('
  if(r.lot)L.push(['bid.cars',`https://bid.cars/ua/search/results?search-type=typing&query=${r.vin||r.lot}`]);
  if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
  $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
- const lot=findLot(r);if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
+ const lot=findLot(r);curLot=lot;if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
  if(!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
  renderCar(r,lot,null);
  if(r.vin)decodeVin(r.vin).then(v=>{if(parse($('url').value)?.lot===r.lot)renderCar(r,lot,v);});
@@ -325,10 +330,10 @@ const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[
 function renderSold(maxB){const S=window.SOLD,R=sold();
  if(S)$('soldMeta').textContent=`Tesla Model Y 2026 з архіву bid.cars · оновлено ${S.updated} · ${S.rows.length} продажів за 7 днів`;
  const b=R.map(r=>r.bid);
- if(!b.length){$('stickyCmp').textContent='';$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
+ if(!b.length){window.__simPct=null;$('stickyCmp').textContent='';$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
  const m=med(b),under=maxB>0?b.filter(x=>x<=maxB).length:0;
  $('stats').innerHTML=[['Продажів',R.length],['Медіана',fmt(m)],['Мін',fmt(Math.min(...b))],['Макс',fmt(Math.max(...b))]].map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
- const pct=Math.round(under/b.length*100);
+ const pct=Math.round(under/b.length*100);window.__simPct=maxB>0?pct:null;window.__simMed=m;
  $('stickyCmp').textContent=maxB>0?`шанс ~${pct}% · медіана ${fmt(m)}`:'';
  $('cmp').innerHTML=maxB>0?`${pct>=50?'✅':pct>=25?'⚠️':'❌'} ${under} з ${b.length} схожих лотів (${pct}%) продались за цю суму або дешевше · медіана ${fmt(m)}`:'';
  const list=[...R].sort((a,b)=>b.date.localeCompare(a.date)||b.bid-a.bid),show=showAll?list:list.slice(0,12);
@@ -336,15 +341,38 @@ function renderSold(maxB){const S=window.SOLD,R=sold();
  $('sold').innerHTML='<tr><th>Дата</th><th>Лот</th><th class="hide-s">Пробіг</th><th class="r">Ставка</th></tr>'+show.map(r=>{
   const v=ver(r.vin),cls=v==='AWD'?'awd':v==='Performance'?'perf':'';
   return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}</div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
+
+// Шанси: популярність (перегляди), виграти (схожі продажі), що страхова віддасть (історія «Не продано»)
+const POP=[[10,'низька',1.15],[40,'середня',1],[150,'висока',0.85],[1e9,'дуже висока',0.65]];
+function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO?window.LOTINFO[curLot.lot]:null;
+ if(stop||!(maxB>0)){el.style.display='none';$('stickyCmp').textContent=stop?'не ставити':'';return;}el.style.display='';
+ const R=[];const views=I?.[0],cur=I?.[1],acv=I?.[2],hist=I?.[4]||[];
+ // Популярність
+ let pf=1,popTxt='—',popD='Немає даних про перегляди: лота немає в знімку або bid.cars не віддав сторінку.';
+ if(views!=null){const p=POP.find(x=>views<=x[0]);pf=p[2];popTxt=p[1];popD=`${views} переглядів на bid.cars (медіана по Model Y 2026 — 17)${cur?` · поточна ставка ${fmt(cur)}`:''}`;}
+ R.push(['🔥 Популярність',popTxt,popD,null]);
+ // Шанс виграти
+ const base=window.__simPct;let win=null;
+ if(base!=null){win=Math.max(2,Math.min(95,Math.round(base*pf)));}
+ R.push(['🏁 Шанс виграти',win!=null?win+'%':'—',base!=null?`${base}% схожих лотів пішли за цю суму або дешевше${pf!==1?`, з поправкою на популярність ×${pf}`:''}`:'Немає схожих продажів для порівняння.',win]);
+ // Шанс, що страхова віддасть
+ const rej=hist.filter(h=>!h[2]),lastRej=rej.length?rej[rej.length-1][1]:null;let acc=87,accD='Без історії відмов. За минулий тиждень ~13% продажів Model Y 2026 повернулись на аукціон (продавець не погодив або покупець не заплатив).';
+ if(lastRej){if(maxB<=lastRej){acc=10;}else if(maxB<=lastRej*1.08){acc=45;}else acc=75;
+  accD=`Цей лот уже ${rej.length} раз${rej.length>1&&rej.length<5?'и':rej.length>=5?'ів':''} не продали; остання відхилена ставка ${fmt(lastRej)}. ${maxB<=lastRej?'Ваша ставка не вища, тож продавець, найімовірніше, знову відмовить.':'Ваша ставка вища за відхилену.'}`;}
+ else if(acv&&maxB/acv<0.3){acc=60;accD+=` Ваша ставка — лише ${Math.round(maxB/acv*100)}% від ринкової вартості (ACV ${fmt(acv)}), продавець може не погодити.`;}
+ R.push(['🤝 Страхова віддасть',acc+'%',accD,acc]);
+ const tot=win!=null?Math.round(win*acc/100):null;
+ el.innerHTML=R.map(([k,v,d,bar])=>`<div>${k}</div><b>${v}</b>${bar!=null?`<div class="bar"><i style="width:${bar}%"></i></div>`:''}<div class="d">${d}</div>`).join('')+
+  (tot!=null?`<div class="tot">Шанс купити за ${fmt(maxB)}</div><b class="tot ${tot>=30?'ok':'bad'}">~${tot}%</b><div class="d">Оцінка за даними знімка, не гарантія.</div>`:'');
+ $('stickyCmp').textContent=tot!=null?`шанс купити ~${tot}%`:'';}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
 function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
- $('budgetLbl').textContent=fmt(o.budget)+' під ключ';
  $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderList();paint();}
+ renderSold(b);renderOdds(b,R.stop);renderList();paint();}
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
  const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
@@ -357,7 +385,6 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.t));});
-if(innerWidth<900)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
 </script></body></html>
