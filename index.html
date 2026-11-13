@@ -28,7 +28,7 @@ input:focus,select:focus{border-color:var(--acc)}
 .url:focus-within{border-color:var(--acc)}
 .url input{border:0;background:none;padding:10px 0;font-size:15px}
 .tag{display:inline-flex;background:var(--chip);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:8px 4px 0 0}
-.tag.a{background:rgba(79,70,229,.12);color:var(--acc)}
+.tag.a{background:rgba(79,70,229,.12);color:var(--acc)}.tag.good{background:rgba(5,150,105,.14);color:var(--ok)}.tag.badt{background:rgba(225,29,72,.14);color:var(--bad)}
 .links{display:inline}
 .links a{margin:8px 10px 0 4px;font-size:12.5px;color:var(--acc);text-decoration:none;font-weight:700;display:inline-block}
 /* Стан лота: рядки «назва — вибір» */
@@ -210,6 +210,7 @@ function risk(){const ex=[],w=[];const d=DOCS.find(x=>x[0]===$('doc').value)||DO
  if(d[3])ex.push(['Документ: '+d[1].split(' /')[0],d[3]]);
  if(d[2]!=='ok')w.push([d[2],'Документ: '+d[1],d[4]]);
  if(keyS==='no'){ex.push(['Ключ / картка Tesla',300]);w.push(['warn','Немає ключа','Для Tesla це не критично: картку-ключ і прив’язку телефону роблять у сервісі (~$200–400). Але без ключа складніше перевірити стан авто до ставки.']);}
+ if(startS==='unknown')w.push(['warn','Стан запуску невідомий','Аукціон не вказав, чи авто заводиться. Подивіться відео або фото приладової панелі на лоті й оберіть стан вручну.']);
  if(startS==='start'){ex.push(['Ризик: тільки заводиться',500]);w.push(['warn','Заводиться, але не їде','Може бути проблема з приводом, підвіскою або 12V-системою. Закладено запас $500.']);}
  if(startS==='dead'){ex.push(['Ризик: не заводиться',1500]);w.push(['warn','Не заводиться','Для електро це може бути батарея або висока напруга, а це найдорожчий ремонт. Закладено запас $1 500, але ризик значно більший. Плюс навантаження й евакуатор можуть коштувати дорожче.']);}
  if(flags.has('flood')||flags.has('burn')||flags.has('storm'))w.push(['stop','Flood / Burn / Storm','За даними брокерів (Caucasus Auto), електромобілі з такими статусами заборонено ввозити в Україну. Не ставте на такий лот.']);
@@ -257,7 +258,7 @@ function onUrl(){const r=parse($('url').value);if(!r){curLot=null;$('info').inne
  const T=[];if(r.auc)T.push(`<span class="tag a">${r.auc}</span>`);if(r.lot)T.push(`<span class="tag">Лот ${r.lot}</span>`);
  if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
  const fl=findLot(r);
- if(fl)T.push(`<span class="tag">${fl.loc}</span>`);
+ if(fl){T.push(`<span class="tag">${fl.loc}</span>`);const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
  else if(!r.state)T.push(`<span class="tag">Лота немає в знімку: штат і стан оберіть вручну</span>`);
  $('info').innerHTML=T.join('');
  const L=[];
@@ -267,7 +268,7 @@ function onUrl(){const r=parse($('url').value);if(!r){curLot=null;$('info').inne
  if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
  $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
  const lot=findLot(r);curLot=lot;if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
- if(!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
+ if(lot||!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
  renderCar(r,lot,null);
  if(r.vin)decodeVin(r.vin).then(v=>{if(parse($('url').value)?.lot===r.lot)renderCar(r,lot,v);});
  run();}
@@ -283,10 +284,15 @@ function applyLot(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
  if(st){$('state').value=st;ship=NEAR.has(st)?'near':'far';}
  $('doc').value=docCode(l.docFull);
  keyS=l.key==='Missing'?'no':'yes';
- startS=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':startS;
+ startS=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':'unknown';
  const d=(l.dmg+' '+l.docFull).toLowerCase();flags=new Set();
  if(/flood/.test(d))flags.add('flood');if(/burn/.test(d))flags.add('burn');if(/hail/.test(d))flags.add('hail');
  const g=dmgGroup(l.dmg);fDmg=g;}
+// Тип продавця: страхові зазвичай продають за найкращу ставку, а дилери, лізинг і прокат часто тримають мінімальну ціну
+const sellerType=n=>{n=(n||'').toLowerCase();if(!n)return null;
+ if(/non-insurance|dealer|turo|rent|leas|bank|financ|credit|motors|auto sales/.test(n))return 'dealer';
+ if(/insur|geico|usaa|state farm|progressive|farmers|allstate|mercury|bristol|farm bureau|auto club|acsc|csaa|nationwide|liberty|travelers|esurance|safeco|kemper|erie|amica|hanover|metlife/.test(n))return 'ins';return 'other';};
+const SELLER={ins:['Страхова','ok'],dealer:['Дилер / лізинг / прокат','bad'],other:['Інший продавець','']};
 const vinCache={};
 function decodeVin(v){if(!vinCache[v])vinCache[v]=fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${v}?format=json`).then(r=>r.json()).then(j=>j.Results[0]).catch(()=>null);return vinCache[v];}
 const TRIM={DED:'Premium RWD',DEE:'Premium AWD (Long Range)',DET:'Performance AWD',AEE:'Standard AWD',AED:'Standard RWD'};
@@ -304,7 +310,7 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
   f('Документ',l.docFull,['cert','parts'].includes(docCode(l.docFull))?'bad':docCode(l.docFull)==='bos'?'bad':'');
   f('Ключ',l.key==='Missing'?'Немає':'Присутній',l.key==='Missing'?'bad':'ok');
   f('Запуск',l.start==='Run / Drive'?'Заводиться і їде':l.start==='Starts'?'Тільки заводиться':'Немає інформації',l.start==='Run / Drive'?'ok':'');
-  f('Локація',l.loc);f('Продавець',l.seller);
+  f('Локація',l.loc);{const t=sellerType(l.seller);f('Продавець',`${l.seller}${t?` · <span class="${SELLER[t][1]}">${SELLER[t][0]}</span>`:''}`);}
   f('Оцінка bid.cars',l.estMin>1000?`${fmt(l.estMin)}–${fmt(l.estMax)}`:'');
   f('Аукціон',(l.close||'').replace(' GMT+2',' (Київ)'));}
  const img=l?.img?`<img src="${l.img}" alt="Фото лота" loading="lazy">`:'';
@@ -363,11 +369,14 @@ function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO
  if(base!=null){win=Math.max(2,Math.min(95,Math.round(base*pf)));}
  R.push(['🏁 Шанс виграти',win!=null?win+'%':'—',base!=null?`${base}% схожих лотів пішли за цю суму або дешевше${pf!==1?`, з поправкою на популярність ×${pf}`:''}`:'Немає схожих продажів для порівняння.',win]);
  // Шанс, що страхова віддасть
- const rej=hist.filter(h=>!h[2]),lastRej=rej.length?rej[rej.length-1][1]:null;let acc=87,accD='Без історії відмов. За минулий тиждень ~13% продажів Model Y 2026 повернулись на аукціон (продавець не погодив або покупець не заплатив).';
+ const st=sellerType(curLot?.seller);
+ const rej=hist.filter(h=>!h[2]),lastRej=rej.length?rej[rej.length-1][1]:null;
+ let acc=st==='dealer'?55:st==='ins'?90:87;
+ let accD=st==='dealer'?'Продає не страхова (дилер, лізинг або прокат). Такі продавці часто ставлять мінімальну ціну: у знімку всі лоти, які не продали 5–10 разів поспіль, — саме від них.':st==='ins'?'Продає страхова. Страхові зазвичай віддають авто за найкращу ставку, якщо вона не зовсім низька.':'Без історії відмов. За минулий тиждень ~13% продажів Model Y 2026 повернулись на аукціон (продавець не погодив або покупець не заплатив).';
  if(lastRej){if(maxB<=lastRej){acc=10;}else if(maxB<=lastRej*1.08){acc=45;}else acc=75;
   accD=`Цей лот уже ${rej.length} раз${rej.length>1&&rej.length<5?'и':rej.length>=5?'ів':''} не продали; остання відхилена ставка ${fmt(lastRej)}. ${maxB<=lastRej?'Ваша ставка не вища, тож продавець, найімовірніше, знову відмовить.':'Ваша ставка вища за відхилену.'}`;}
  else if(acv&&maxB/acv<0.3){acc=60;accD+=` Ваша ставка — лише ${Math.round(maxB/acv*100)}% від ринкової вартості (ACV ${fmt(acv)}), продавець може не погодити.`;}
- R.push(['🤝 Страхова віддасть',acc+'%',accD,acc]);
+ R.push([st==='dealer'?'🤝 Продавець віддасть':'🤝 Страхова віддасть',acc+'%',accD,acc]);
  const tot=win!=null?Math.round(win*acc/100):null;
  el.innerHTML=R.map(([k,v,d,bar])=>`<div>${k}</div><b>${v}</b>${bar!=null?`<div class="bar"><i style="width:${bar}%"></i></div>`:''}<div class="d">${d}</div>`).join('')+
   (tot!=null?`<div class="tot">Шанс купити за ${fmt(maxB)}</div><b class="tot ${tot>=30?'ok':'bad'}">~${tot}%</b><div class="d">Оцінка за даними знімка, не гарантія.</div>`:'');
