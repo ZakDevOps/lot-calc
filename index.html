@@ -75,6 +75,12 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 .pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--mut)}
 .pill.awd{background:rgba(5,150,105,.12);color:var(--ok)}
 .pill.perf{background:rgba(225,29,72,.12);color:var(--bad)}
+.w{border-radius:12px;padding:10px 12px;margin:0 0 8px;font-size:13.5px;line-height:1.45}
+.w b{display:block;font-size:14px;margin-bottom:2px}
+.w.stop{background:rgba(225,29,72,.1);border:1px solid rgba(225,29,72,.35)}
+.w.warn{background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.35)}
+.w.ok{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.3);color:var(--fg)}
+.chip.danger.on{background:var(--bad);border-color:var(--bad);box-shadow:0 4px 12px rgba(225,29,72,.3)}
 </style></head><body>
 <div class="hero"><div class="hero-in">
 <h1>⚡ Ставка на лот</h1>
@@ -95,6 +101,18 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <div class="sec"><div class="mut">Доставка</div><div class="chips" id="shipChips"></div></div>
 <div class="sec"><div class="mut">Пошкодження → ремонт</div><div class="chips" id="dmgChips"></div></div>
 <div class="grid sec"><label>Ремонт, $<input id="repair" type="number" value="4000"></label></div>
+</div>
+
+<div class="card">
+<h2>📄 Документ і стан лота</h2>
+<div class="mut">Перепишіть з картки лота на Copart / IAAI / bid.cars. Це впливає на приховані витрати і на те, чи можна взагалі ввезти авто.</div>
+<div class="grid sec">
+<label>Документ про продаж<select id="doc"></select></label>
+</div>
+<div class="sec"><div class="mut">Ключ</div><div class="chips" id="keyChips"></div></div>
+<div class="sec"><div class="mut">Стан запуску</div><div class="chips" id="startChips"></div></div>
+<div class="sec"><div class="mut">Особливі позначки (можна кілька)</div><div class="chips" id="flagChips"></div></div>
+<div id="warn" class="sec"></div>
 </div>
 
 <div class="card result" id="result">
@@ -134,6 +152,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <label>Дальній штат, $<input id="far" type="number" value="3400"></label>
 </div>
 <p><label class="row" style="color:var(--fg);font-size:14px;flex-direction:row"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро (уточнити в MZ)</label></p>
+<div class="grid"><label>Пенсійний збір при першій реєстрації<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label></div>
+<p class="mut">Пенсійний збір платиться в сервісному центрі МВС при першій реєстрації в Україні; ставка залежить від вартості авто. Рахується від митної вартості, як у калькуляторі MZ.</p>
 <p class="mut">Ближніми вважаються штати східного узбережжя: <span id="nearList"></span>. Якщо MZ рахує інакше, оберіть доставку вручну.</p>
 </details>
 </div>
@@ -151,6 +171,31 @@ const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' 
 const DMG=[['Легке (бампер, фара)',2000,'front'],['Середнє (перед)',4000,'front'],['Середнє (зад)',4000,'rear'],['Бік (двері, стійка)',5000,'side'],['Важке (перед+бік)',7000,'front']];
 const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
 let ship='near', fDmg='all', fReg='all', fDrv='all', showAll=false;
+let keyS='yes', startS='run', flags=new Set();
+// Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
+const DOCS=[
+ ['salvage','Salvage / SC / SV / ST / SM / S1 / RB','ok',0,'Звичайний документ для битих авто. Експорт і розмитнення в Україні без проблем.'],
+ ['clear','Clear / Original / Rebuildable','ok',0,'Чистий або відновлюваний титул. Проблем з експортом немає.'],
+ ['mv907','MV-907A (New York)','ok',0,'Нью-Йоркський salvage-сертифікат. Нормально вивозиться, але оформлення може тривати довше.'],
+ ['bos','Bill of sale','warn',500,'Без титулу. Для експорту потрібне додаткове оформлення: зазвичай +$200–800 і затримка на кілька тижнів. Bid.cars попереджає, що реєстрація в Польщі неможлива; для України уточніть у MZ.'],
+ ['cert','Certificate of destruction / Junk','stop',0,'Авто призначене на утилізацію. Легально експортувати й зареєструвати не вийде.'],
+ ['parts','Parts only / Non-repairable','stop',0,'Тільки на запчастини. Зареєструвати в Україні не вийде.'],
+ ['unknown','Невідомо / інше','warn',0,'Перевірте документ у менеджера MZ до ставки.']];
+const KEYS=[['🔑 Ключ є','yes'],['Ключа немає','no']];
+const STARTS=[['Заводиться і їде','run'],['Тільки заводиться','start'],['Не заводиться / стаціонарний','dead']];
+const FLAGS=[['💧 Flood (вода)','flood'],['🔥 Burn (вогонь)','burn'],['🌪 Storm damage','storm'],['🧊 Hail (град)','hail'],['🔋 Пошкоджена батарея','battery'],['🎈 Спрацювали подушки','airbag']];
+function risk(){const ex=[],w=[];const d=DOCS.find(x=>x[0]===$('doc').value)||DOCS[0];
+ if(d[3])ex.push(['Документ: '+d[1].split(' /')[0],d[3]]);
+ if(d[2]!=='ok')w.push([d[2],'Документ: '+d[1],d[4]]);
+ if(keyS==='no'){ex.push(['Ключ / картка Tesla',300]);w.push(['warn','Немає ключа','Для Tesla це не критично: картку-ключ і прив’язку телефону роблять у сервісі (~$200–400). Але без ключа складніше перевірити стан авто до ставки.']);}
+ if(startS==='start'){ex.push(['Ризик: тільки заводиться',500]);w.push(['warn','Заводиться, але не їде','Може бути проблема з приводом, підвіскою або 12V-системою. Закладено запас $500.']);}
+ if(startS==='dead'){ex.push(['Ризик: не заводиться',1500]);w.push(['warn','Не заводиться','Для електро це може бути батарея або висока напруга, а це найдорожчий ремонт. Закладено запас $1 500, але ризик значно більший. Плюс навантаження й евакуатор можуть коштувати дорожче.']);}
+ if(flags.has('flood')||flags.has('burn')||flags.has('storm'))w.push(['stop','Flood / Burn / Storm','За даними брокерів (Caucasus Auto), електромобілі з такими статусами заборонено ввозити в Україну. Не ставте на такий лот.']);
+ if(flags.has('battery'))w.push(['stop','Пошкоджена батарея','Електро з критично пошкодженою батареєю заборонено ввозити. Навіть якщо пропустять, нова батарея Model Y коштує ~$12–16 тис.']);
+ if(flags.has('hail')){ex.push(['Град: PDR / фарбування',1500]);w.push(['warn','Град','Ремонт вм’ятин від граду (PDR) зазвичай $1–3 тис., залежно від кількості. Закладено $1 500.']);}
+ if(flags.has('airbag')){ex.push(['Подушки безпеки + модуль',2500]);w.push(['warn','Спрацювали подушки','Заміна подушок, ременів і модуля SRS для Model Y зазвичай $2–4 тис. понад кузовний ремонт. Закладено $2 500.']);}
+ if(!w.length)w.push(['ok','Критичних ризиків не видно','Але все одно перевірте фото, Carfax і історію продажів VIN перед ставкою.']);
+ return {ex,w,stop:w.some(x=>x[0]==='stop')};}
 const store={get(){try{return JSON.parse(localStorage.getItem('lots')||'[]')}catch(e){return []}},set(v){try{localStorage.setItem('lots',JSON.stringify(v))}catch(e){}}};
 const fmt=v=>'$'+Math.round(v).toLocaleString('uk-UA');
 
@@ -159,6 +204,12 @@ $('nearList').textContent=[...NEAR].join(', ');
 function chips(el,items,onPick,isOn){el.innerHTML='';items.forEach(([t,v])=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.onclick=()=>{onPick(v);run();};b._v=v;b._on=isOn;el.appendChild(b);});}
 chips($('shipChips'),[['🚚 Ближній штат','near'],['🚛 Дальній штат','far']],v=>ship=v,v=>ship===v);
 chips($('dmgChips'),DMG.map(([t,v,g])=>[t+' · ~$'+v/1000+'k',[v,g]]),([v,g])=>{$('repair').value=v;fDmg=g;},([v,g])=>n('repair')===v&&fDmg===g);
+$('doc').innerHTML=DOCS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');
+chips($('keyChips'),KEYS,v=>keyS=v,v=>keyS===v);
+chips($('startChips'),STARTS,v=>startS=v,v=>startS===v);
+chips($('flagChips'),FLAGS,v=>flags.has(v)?flags.delete(v):flags.add(v),v=>flags.has(v));
+[...$('flagChips').children].forEach(b=>{if(['flood','burn','storm','battery'].includes(b._v))b.classList.add('danger');});
+$('doc').addEventListener('change',run);
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
 chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
@@ -198,10 +249,11 @@ function fee(a,p){const t=FEES[a];if(p<=t[0][0])return t[0][1];
  const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
 function calc(p,o){const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
  const rows=[['Ставка',p],['Збір '+o.auc,f],['Доставка до Клевані ('+(o.ship==='near'?'ближній':'дальній')+')',o.shipCost],
-  ['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Брокер',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],['Запас',o.buf]];
+  ['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Брокер',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,cv*o.pens/100]);
  return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
 function maxBid(o){let lo=0,hi=80000;for(let i=0;i<40;i++){const m=(lo+hi)/2;calc(m,o).total<=o.budget?lo=m:hi=m;}return Math.floor(lo/50)*50;}
-function opts(over){const o={auc:$('auc').value,ship,repair:n('repair'),broker:n('broker'),svc:n('svc'),buf:n('buf'),kwh:n('kwh'),vat:$('vat').checked,budget:n('budget')};
+function opts(over){const o={auc:$('auc').value,ship,repair:n('repair'),broker:n('broker'),svc:n('svc'),buf:n('buf'),kwh:n('kwh'),vat:$('vat').checked,budget:n('budget'),pens:n('pens'),extras:risk().ex};
  Object.assign(o,over||{});o.shipCost=o.ship==='near'?n('near'):n('far');return o;}
 
 // Схожі продажі
@@ -228,23 +280,24 @@ function renderSold(maxB){const S=window.SOLD,R=sold();
   return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}</div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
-function run(){const o=opts(),b=maxBid(o);
+function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('budgetLbl').textContent=fmt(o.budget)+' під ключ';
- $('max').textContent=b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
- $('stickyMax').textContent=$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
+ $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
+ $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
+ $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
  renderSold(b);renderList();paint();}
 function renderList(){const L=store.get();$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
- const rows=L.map((x,i)=>{const b=maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair}));
+ const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
   const u=x.url?`<a href="${x.url}" target="_blank" rel="noopener">${x.name||x.lot||'лот'}</a>`:(x.name||x.lot);
   return `<tr><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'}</div></td><td class="r">${fmt(x.repair)}</td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r"><button class="x" data-i="${i}" title="Прибрати">✕</button></td></tr>`;}).join('');
  $('list').innerHTML='<tr><th>Лот</th><th class="r">Ремонт</th><th class="r">Макс. ставка</th><th></th></tr>'+rows;
  $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
- L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair')});
+ L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();};
 $('url').addEventListener('input',onUrl);
-document.querySelectorAll('input:not(#url),select:not(#state)').forEach(e=>e.addEventListener('input',run));
+document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
 </script></body></html>
