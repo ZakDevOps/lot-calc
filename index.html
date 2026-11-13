@@ -62,6 +62,8 @@ td.r,th.r{text-align:right;white-space:nowrap}
 tr:last-child td{border-bottom:0}
 td a{color:inherit;font-weight:700;text-decoration:none}td a:hover{color:var(--acc)}
 details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700;margin:8px 0 4px}
+#brd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 12px 6px;margin-top:10px}
+#brd summary{color:var(--fg);font-size:13px;margin:6px 0}
 .addrow{display:flex;gap:8px;margin-top:10px}.addrow input{flex:1}
 .btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:800;white-space:nowrap}
 .x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:15px}
@@ -168,7 +170,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="cmp" id="cmp" hidden></div>
   <div class="odds" id="odds"></div>
   <div id="warn"></div>
-  <details id="brd"><summary>Розбивка витрат</summary><table id="br"></table></details>
+  <details open id="brd"><summary>🧾 З чого складається ціна під ключ</summary><table id="br"></table></details>
   <div class="addrow"><input id="name" placeholder="Назва лота"><button class="btn" id="add">＋ Додати</button></div>
  </div>
  <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
@@ -399,6 +401,7 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
 showTab(store.get().length?'mine':'sold');
+if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
 </script></body></html>
