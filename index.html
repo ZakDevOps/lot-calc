@@ -5,168 +5,171 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f3f5fb;--card:#fff;--fg:#141826;--mut:#6b7285;--line:#e4e8f2;--chip:#eef1f8;
- --acc:#4f46e5;--acc2:#06b6d4;--ok:#059669;--bad:#e11d48;--warn:#d97706;--shadow:0 1px 2px rgba(20,24,38,.04),0 8px 24px rgba(20,24,38,.06)}
+ --acc:#4f46e5;--ok:#059669;--bad:#e11d48;--shadow:0 1px 2px rgba(20,24,38,.04),0 8px 24px rgba(20,24,38,.06)}
 @media (prefers-color-scheme:dark){:root{--bg:#0d1020;--card:#161a2e;--fg:#eef0f7;--mut:#959bb2;--line:#262b45;--chip:#1f2440;--shadow:none}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Manrope,-apple-system,system-ui,sans-serif}
-.hero{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);color:#fff;padding:28px 16px 70px}
-.hero-in,main{max-width:900px;margin:0 auto}
-.hero h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em}
-.hero p{margin:6px 0 0;opacity:.85;font-size:14px}
-main{padding:0 16px 40px;margin-top:-50px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:0 0 16px;box-shadow:var(--shadow)}
-h2{font-size:16px;margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px}
-.mut{color:var(--mut);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:6px;font-weight:600}
+body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.5 Manrope,-apple-system,system-ui,sans-serif}
+.hero{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);color:#fff;padding:18px 16px 54px}
+.hero-in,main{max-width:1180px;margin:0 auto}
+.hero h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.hero p{margin:2px 0 0;opacity:.85;font-size:13px}
+main{padding:0 16px 40px;margin-top:-40px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.side{position:sticky;top:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
+h2{font-size:15px;margin:0 0 10px;font-weight:800}
+.mut{color:var(--mut);font-size:12.5px}
+label{display:flex;flex-direction:column;font-size:11.5px;color:var(--mut);gap:4px;font-weight:700}
 input,select,button{font:inherit}
-input,select{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);width:100%;outline:none;transition:border-color .15s}
+input,select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;outline:none}
 input:focus,select:focus{border-color:var(--acc)}
-.url{display:flex;gap:10px;align-items:center;background:var(--bg);border:2px solid var(--line);border-radius:14px;padding:4px 4px 4px 14px;transition:border-color .15s}
+.url{display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:2px 12px}
 .url:focus-within{border-color:var(--acc)}
-.url input{border:0;background:none;padding:12px 0;font-size:16px}
-.tag{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;margin:8px 6px 0 0}
+.url input{border:0;background:none;padding:10px 0;font-size:15px}
+.tag{display:inline-flex;background:var(--chip);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:8px 4px 0 0}
 .tag.a{background:rgba(79,70,229,.12);color:var(--acc)}
-.links a{display:inline-block;margin:10px 14px 0 0;font-size:13px;color:var(--acc);text-decoration:none;font-weight:600}
-.sec{margin-top:16px}.sec .mut{margin-bottom:8px;font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:999px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.links{display:inline}
+.links a{margin:8px 10px 0 4px;font-size:12.5px;color:var(--acc);text-decoration:none;font-weight:700;display:inline-block}
+/* Стан лота: рядки «назва — вибір» */
+.rows{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;align-items:center}
+.rows>.k{font-size:12px;color:var(--mut);font-weight:700}
+.inl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inl select,.inl input{width:auto;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:12.5px;font-weight:700;transition:all .15s}
 .chip:hover{border-color:var(--acc)}
-.chip.on{background:var(--acc);color:#fff;border-color:var(--acc);box-shadow:0 4px 12px rgba(79,70,229,.3)}
-.result{background:linear-gradient(135deg,rgba(79,70,229,.08),rgba(6,182,212,.08));border:1px solid rgba(79,70,229,.25)}
-.big{font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin:4px 0}
+.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.chip.danger.on{background:var(--bad);border-color:var(--bad)}
+.money{position:relative;width:110px}.money input{padding-left:20px}.money:before{content:'$';position:absolute;left:9px;top:8px;color:var(--mut);font-weight:700}
+/* Результат */
+.result{background:linear-gradient(160deg,rgba(79,70,229,.10),rgba(6,182,212,.06));border-color:rgba(79,70,229,.3)}
+.big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:2px 0 6px}
 .ok{color:var(--ok)}.bad{color:var(--bad)}
-.cmp{margin-top:6px;font-size:14px;font-weight:600}
-.btn{background:var(--acc);color:#fff;border:0;border-radius:12px;padding:11px 18px;cursor:pointer;font-weight:700;transition:transform .1s}
-.btn:active{transform:scale(.97)}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:10px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{font-size:12px;color:var(--mut);font-weight:600}
-td.r,th.r{text-align:right;white-space:nowrap}
-tr:last-child td{border-bottom:0}
-td a{color:inherit;font-weight:600;text-decoration:none}td a:hover{color:var(--acc)}
-.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;margin-top:14px}
-.wrap{overflow-x:auto}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0}
-.stat{background:var(--bg);border-radius:14px;padding:12px}
-.stat b{display:block;font-size:20px;font-weight:800}
-.stat span{font-size:12px;color:var(--mut);font-weight:600}
-.sticky{display:none}
-@media (max-width:560px){
- body{padding-bottom:76px}
- .hero{padding:20px 16px 56px}.hero h1{font-size:23px}.hero p{font-size:13px}
- main{margin-top:-40px}
- .card{padding:16px;border-radius:16px}
- .grid{grid-template-columns:1fr 1fr;gap:10px}
- .grid label:has(#name){grid-column:1/-1}
- input,select{font-size:16px;padding:9px 10px}
- .chip{padding:7px 11px;font-size:12.5px}
- .stats{grid-template-columns:repeat(2,1fr)}.stat b{font-size:18px}
- .big{font-size:42px}.hide-s{display:none}
- td,th{padding:9px 4px}
- .btn{width:100%}
- .sticky{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;justify-content:space-between;gap:10px;
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
- .sticky b{font-size:24px;font-weight:800}.sticky .mut{font-size:11px}
- .sticky a{font-size:13px;font-weight:700;color:var(--acc);text-decoration:none;white-space:nowrap}
-}
-.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--mut)}
-.pill.awd{background:rgba(5,150,105,.12);color:var(--ok)}
-.pill.perf{background:rgba(225,29,72,.12);color:var(--bad)}
-.w{border-radius:12px;padding:10px 12px;margin:0 0 8px;font-size:13.5px;line-height:1.45}
-.w b{display:block;font-size:14px;margin-bottom:2px}
+.cmp{font-size:13px;font-weight:700;margin-bottom:10px}
+.w{border-radius:10px;padding:8px 10px;margin:0 0 6px;font-size:12.5px;line-height:1.4}
+.w b{display:block;font-size:13px}
 .w.stop{background:rgba(225,29,72,.1);border:1px solid rgba(225,29,72,.35)}
 .w.warn{background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.35)}
 .w.ok{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.3);color:var(--fg)}
-.car{display:grid;grid-template-columns:220px 1fr;gap:16px;margin-top:16px;padding:14px;background:var(--bg);border-radius:14px}
-.car img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--chip)}
-.car h3{margin:0 0 2px;font-size:18px;font-weight:800}
-.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 14px;margin-top:10px}
-.facts div{font-size:13.5px;font-weight:700}.facts span{display:block;font-size:11px;color:var(--mut);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--mut);font-weight:700}
+td.r,th.r{text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td a{color:inherit;font-weight:700;text-decoration:none}td a:hover{color:var(--acc)}
+details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700;margin:8px 0 4px}
+.addrow{display:flex;gap:8px;margin-top:10px}.addrow input{flex:1}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:800;white-space:nowrap}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:15px}
+/* Картка авто */
+.car{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-top:12px;padding:12px;background:var(--bg);border-radius:12px}
+.car img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--chip)}
+.car h3{margin:0;font-size:16px;font-weight:800}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px 12px;margin-top:8px}
+.facts div{font-size:13px;font-weight:700}.facts span{display:block;font-size:10.5px;color:var(--mut);font-weight:700}
 .facts .bad{color:var(--bad)}.facts .ok{color:var(--ok)}
-@media (max-width:560px){.car{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}}
-.chip.danger.on{background:var(--bad);border-color:var(--bad);box-shadow:0 4px 12px rgba(225,29,72,.3)}
+/* Вкладки */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 12px}
+.tab{white-space:nowrap;background:none;border:0;padding:8px 12px;font-weight:800;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;font-size:13.5px}
+.tab.on{color:var(--fg);border-bottom-color:var(--acc)}
+.pane{display:none}.pane.on{display:block}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stat{background:var(--bg);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:17px;font-weight:800}.stat span{font-size:11px;color:var(--mut);font-weight:700}
+.filters{display:flex;flex-wrap:wrap;gap:6px 14px}
+.pill{font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--chip);color:var(--mut)}
+.pill.awd{background:rgba(5,150,105,.12);color:var(--ok)}.pill.perf{background:rgba(225,29,72,.12);color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.wrap{overflow-x:auto}
+.sticky{display:none}
+@media (max-width:900px){.layout{display:flex;flex-direction:column;gap:0}.left{display:contents}.side{position:static;order:3}.tabs-card{order:4}}
+@media (max-width:560px){
+ body{padding-bottom:72px}
+ .hero{padding:14px 16px 46px}.hero h1{font-size:20px}
+ .card{padding:14px}
+ .rows{grid-template-columns:1fr;gap:4px}.rows>.k{margin-top:8px}
+ input,select{font-size:16px}
+ .car{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}
+ .stats{grid-template-columns:repeat(2,1fr)}.hide-s{display:none}
+ .tab{padding:8px 7px;font-size:12.5px}.tabs{overflow-x:auto}
+ .sticky{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;gap:10px;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
+ .sticky b{font-size:22px;font-weight:800}.sticky .mut{font-size:11px}
+ .sticky a{font-size:13px;font-weight:800;color:var(--acc);text-decoration:none;white-space:nowrap}
+}
 </style></head><body>
 <div class="hero"><div class="hero-in">
 <h1>⚡ Ставка на лот</h1>
-<p>Скільки максимум ставити на Copart або IAAI, щоб уміститися в бюджет під ключ. Тарифи MZ Auto USA, доставка до Клевані.</p>
+<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи MZ Auto USA до Клевані.</p>
 </div></div>
 <main>
+<div class="layout">
+<div class="left">
+ <div class="card">
+  <div class="url">🔗<input id="url" placeholder="Посилання Copart / IAAI / bid.cars або номер лота"></div>
+  <div><span id="info"></span><span id="links" class="links"></span></div>
+  <div id="car"></div>
+ </div>
 
-<div class="card">
-<h2>🔗 Лот</h2>
-<div class="url"><input id="url" placeholder="Посилання Copart / IAAI / bid.cars"></div>
-<div id="info"></div>
-<div id="links" class="links"></div>
-<div id="car"></div>
-<div class="grid sec">
-<label>Аукціон<select id="auc"><option>Copart</option><option>IAAI</option></select></label>
-<label>Штат лота<select id="state"></select></label>
-<label>Назва (для списку)<input id="name" placeholder="напр. Albany, бік"></label>
-</div>
-<div class="sec"><div class="mut">Доставка</div><div class="chips" id="shipChips"></div></div>
-<div class="sec"><div class="mut">Пошкодження → ремонт</div><div class="chips" id="dmgChips"></div></div>
-<div class="grid sec"><label>Ремонт, $<input id="repair" type="number" value="4000"></label></div>
+ <div class="card">
+  <h2>Стан лота і витрати</h2>
+  <div class="rows">
+   <div class="k">Аукціон · штат</div>
+   <div class="inl"><select id="auc"><option>Copart</option><option>IAAI</option></select><select id="state"></select><span class="chips" id="shipChips"></span></div>
+   <div class="k">Пошкодження</div>
+   <div class="inl"><span class="chips" id="dmgChips"></span><span class="money"><input id="repair" type="number" value="4000" title="Ремонт, $"></span></div>
+   <div class="k">Документ</div>
+   <div class="inl"><select id="doc"></select></div>
+   <div class="k">Ключ · запуск</div>
+   <div class="inl"><span class="chips" id="keyChips"></span><span class="chips" id="startChips"></span></div>
+   <div class="k">Позначки</div>
+   <div class="chips" id="flagChips"></div>
+  </div>
+ </div>
+
+ <div class="card tabs-card">
+  <div class="tabs"><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
+  <div class="pane on" id="p-sold">
+   <div class="mut" id="soldMeta"></div>
+   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span></div>
+   <div class="stats" id="stats"></div>
+   <div class="wrap"><table id="sold"></table></div>
+   <button class="chip" id="more" style="margin-top:8px">Показати всі</button>
+  </div>
+  <div class="pane" id="p-mine">
+   <div class="wrap"><table id="list"></table></div>
+   <div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою «Додати» біля ставки.</div>
+  </div>
+  <div class="pane" id="p-set">
+   <div class="grid">
+    <label>Бюджет під ключ, $<input id="budget" type="number" value="30000"></label>
+    <label>Брокер, $<input id="broker" type="number" value="300"></label>
+    <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
+    <label>Запас, $<input id="buf" type="number" value="500"></label>
+    <label>Батарея, кВт·год<input id="kwh" type="number" value="79"></label>
+    <label>Ближній штат, $<input id="near" type="number" value="2700"></label>
+    <label>Дальній штат, $<input id="far" type="number" value="3400"></label>
+    <label>Пенсійний збір<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label>
+   </div>
+   <p><label style="flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро (уточнити в MZ)</label></p>
+   <p class="mut">Ближні штати: <span id="nearList"></span>. Пенсійний збір платиться при першій реєстрації в Україні й рахується від митної вартості, як у калькуляторі MZ.</p>
+  </div>
+ </div>
 </div>
 
-<div class="card">
-<h2>📄 Документ і стан лота</h2>
-<div class="mut">Перепишіть з картки лота на Copart / IAAI / bid.cars. Це впливає на приховані витрати і на те, чи можна взагалі ввезти авто.</div>
-<div class="grid sec">
-<label>Документ про продаж<select id="doc"></select></label>
+<div class="side">
+ <div class="card result" id="result">
+  <div class="mut">Максимальна ставка · бюджет <span id="budgetLbl"></span></div>
+  <div class="big" id="max">—</div>
+  <div class="cmp" id="cmp"></div>
+  <div id="warn"></div>
+  <details open id="brd"><summary>Розбивка витрат</summary><table id="br"></table></details>
+  <div class="addrow"><input id="name" placeholder="Назва лота"><button class="btn" id="add">＋ Додати</button></div>
+ </div>
+ <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
 </div>
-<div class="sec"><div class="mut">Ключ</div><div class="chips" id="keyChips"></div></div>
-<div class="sec"><div class="mut">Стан запуску</div><div class="chips" id="startChips"></div></div>
-<div class="sec"><div class="mut">Особливі позначки (можна кілька)</div><div class="chips" id="flagChips"></div></div>
-<div id="warn" class="sec"></div>
 </div>
-
-<div class="card result" id="result">
-<div class="mut">Максимальна ставка, щоб уміститися в <span id="budgetLbl"></span></div>
-<div class="big" id="max">—</div>
-<div class="cmp" id="cmp"></div>
-<div class="row" style="margin-top:14px"><button class="btn" id="add">＋ Додати до списку тижня</button></div>
-<details><summary>Розбивка витрат</summary><table id="br" style="margin-top:8px"></table></details>
-</div>
-
-<div class="card">
-<h2>📊 Схожі продажі за тиждень</h2>
-<div class="mut" id="soldMeta"></div>
-<div class="sec"><div class="chips" id="fDmg"></div></div>
-<div class="sec"><div class="chips" id="fReg"></div></div>
-<div class="sec"><div class="chips" id="fDrv"></div></div>
-<div class="stats" id="stats"></div>
-<div class="wrap"><table id="sold"></table></div>
-<div class="row" style="margin-top:10px"><button class="chip" id="more">Показати всі</button></div>
-</div>
-
-<div class="card">
-<h2>📋 Лоти тижня</h2>
-<div class="wrap"><table id="list"></table></div>
-<div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою вище.</div>
-</div>
-
-<div class="card">
-<details open><summary>⚙️ Налаштування (бюджет, брокер, ПДВ, тарифи)</summary>
-<div class="grid" style="margin-top:12px">
-<label>Бюджет під ключ, $<input id="budget" type="number" value="30000"></label>
-<label>Брокер, $<input id="broker" type="number" value="300"></label>
-<label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
-<label>Запас, $<input id="buf" type="number" value="500"></label>
-<label>Батарея, кВт·год<input id="kwh" type="number" value="79"></label>
-<label>Ближній штат, $<input id="near" type="number" value="2700"></label>
-<label>Дальній штат, $<input id="far" type="number" value="3400"></label>
-</div>
-<p><label class="row" style="color:var(--fg);font-size:14px;flex-direction:row"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро (уточнити в MZ)</label></p>
-<div class="grid"><label>Пенсійний збір при першій реєстрації<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label></div>
-<p class="mut">Пенсійний збір платиться в сервісному центрі МВС при першій реєстрації в Україні; ставка залежить від вартості авто. Рахується від митної вартості, як у калькуляторі MZ.</p>
-<p class="mut">Ближніми вважаються штати східного узбережжя: <span id="nearList"></span>. Якщо MZ рахує інакше, оберіть доставку вручну.</p>
-</details>
-</div>
-<div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↑</a></div>
-<p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
+<div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
 <script src="sold.js"></script>
 <script src="lots.js"></script>
@@ -177,7 +180,7 @@ const FEES={Copart:[[10000,1168],[14000,1288],[16000,1246],[18000,1372],[20000,1
 const FREIGHT=1700, EUR=1.15;
 const STATES='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
 const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' '));
-const DMG=[['Легке (бампер, фара)',2000,'front'],['Середнє (перед)',4000,'front'],['Середнє (зад)',4000,'rear'],['Бік (двері, стійка)',5000,'side'],['Важке (перед+бік)',7000,'front']];
+const DMG=[['Легке',2000,'front'],['Перед',4000,'front'],['Зад',4000,'rear'],['Бік',5000,'side'],['Важке',7000,'front']];
 const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
 let ship='near', fDmg='all', fReg='all', fDrv='all', showAll=false;
 let keyS='yes', startS='run', flags=new Set();
@@ -190,9 +193,9 @@ const DOCS=[
  ['cert','Certificate of destruction / Junk','stop',0,'Авто призначене на утилізацію. Легально експортувати й зареєструвати не вийде.'],
  ['parts','Parts only / Non-repairable','stop',0,'Тільки на запчастини. Зареєструвати в Україні не вийде.'],
  ['unknown','Невідомо / інше','warn',0,'Перевірте документ у менеджера MZ до ставки.']];
-const KEYS=[['🔑 Ключ є','yes'],['Ключа немає','no']];
-const STARTS=[['Заводиться і їде','run'],['Тільки заводиться','start'],['Не заводиться / стаціонарний','dead']];
-const FLAGS=[['💧 Flood (вода)','flood'],['🔥 Burn (вогонь)','burn'],['🌪 Storm damage','storm'],['🧊 Hail (град)','hail'],['🔋 Пошкоджена батарея','battery'],['🎈 Спрацювали подушки','airbag']];
+const KEYS=[['🔑 Є ключ','yes'],['Без ключа','no']];
+const STARTS=[['Їде','run'],['Лише заводиться','start'],['Не заводиться','dead']];
+const FLAGS=[['💧 Flood','flood'],['🔥 Burn','burn'],['🌪 Storm','storm'],['🧊 Град','hail'],['🔋 Батарея','battery'],['🎈 Подушки','airbag']];
 function risk(){const ex=[],w=[];const d=DOCS.find(x=>x[0]===$('doc').value)||DOCS[0];
  if(d[3])ex.push(['Документ: '+d[1].split(' /')[0],d[3]]);
  if(d[2]!=='ok')w.push([d[2],'Документ: '+d[1],d[4]]);
@@ -208,11 +211,11 @@ function risk(){const ex=[],w=[];const d=DOCS.find(x=>x[0]===$('doc').value)||DO
 const store={get(){try{return JSON.parse(localStorage.getItem('lots')||'[]')}catch(e){return []}},set(v){try{localStorage.setItem('lots',JSON.stringify(v))}catch(e){}}};
 const fmt=v=>'$'+Math.round(v).toLocaleString('uk-UA');
 
-$('state').innerHTML='<option value="">—</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
+$('state').innerHTML='<option value="">Штат</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
 $('nearList').textContent=[...NEAR].join(', ');
 function chips(el,items,onPick,isOn){el.innerHTML='';items.forEach(([t,v])=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.onclick=()=>{onPick(v);run();};b._v=v;b._on=isOn;el.appendChild(b);});}
-chips($('shipChips'),[['🚚 Ближній штат','near'],['🚛 Дальній штат','far']],v=>ship=v,v=>ship===v);
-chips($('dmgChips'),DMG.map(([t,v,g])=>[t+' · ~$'+v/1000+'k',[v,g]]),([v,g])=>{$('repair').value=v;fDmg=g;},([v,g])=>n('repair')===v&&fDmg===g);
+chips($('shipChips'),[['🚚 Ближній','near'],['🚛 Дальній','far']],v=>ship=v,v=>ship===v);
+chips($('dmgChips'),DMG.map(([t,v,g])=>[t+' ~'+v/1000+'k',[v,g]]),([v,g])=>{$('repair').value=v;fDmg=g;},([v,g])=>n('repair')===v&&fDmg===g);
 $('doc').innerHTML=DOCS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');
 chips($('keyChips'),KEYS,v=>keyS=v,v=>keyS===v);
 chips($('startChips'),STARTS,v=>startS=v,v=>startS===v);
@@ -243,7 +246,7 @@ function onUrl(){const r=parse($('url').value);if(!r){$('info').innerHTML='';$('
  if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
  const fl=findLot(r);
  if(fl)T.push(`<span class="tag">${fl.loc}</span>`);
- else if(!r.state)T.push(`<span class="tag">Лота немає в знімку: штат і стан оберіть нижче</span>`);
+ else if(!r.state)T.push(`<span class="tag">Лота немає в знімку: штат і стан оберіть вручну</span>`);
  $('info').innerHTML=T.join('');
  const L=[];
  if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
@@ -296,7 +299,7 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
  $('car').innerHTML=`<div class="car" style="${img?'':'grid-template-columns:1fr'}">${img}<div><h3>${year} Tesla ${model}</h3>
  <div class="mut">${vin||''}${l?'':' · пробіг і стан лота невідомі: лота немає в знімку '+(window.LOTS?.updated||'')}</div>
  <div class="facts">${F.join('')}</div>
- ${l?`<div class="mut" style="margin-top:8px">Дані лота з bid.cars на ${window.LOTS.updated}. Штат, документ, ключ і стан заповнено автоматично.</div>`:''}</div></div>`;}
+ ${l?`<div class="mut" style="margin-top:8px">Дані bid.cars на ${window.LOTS.updated} · стан лота заповнено автоматично</div>`:''}</div></div>`;}
 $('state').addEventListener('change',()=>{const s=$('state').value;if(s){ship=NEAR.has(s)?'near':'far';run();}});
 
 function fee(a,p){const t=FEES[a];if(p<=t[0][0])return t[0][1];
@@ -342,7 +345,7 @@ function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
  renderSold(b);renderList();paint();}
-function renderList(){const L=store.get();$('empty').style.display=L.length?'none':'block';
+function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
  const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
   const u=x.url?`<a href="${x.url}" target="_blank" rel="noopener">${x.name||x.lot||'лот'}</a>`:(x.name||x.lot);
@@ -353,6 +356,8 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();};
 $('url').addEventListener('input',onUrl);
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.t));});
+if(innerWidth<900)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
 </script></body></html>
