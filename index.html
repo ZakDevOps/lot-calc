@@ -132,7 +132,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
  </div>
 
  <div class="card tabs-card">
-  <div class="tabs"><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
+  <div class="tabs"><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
   <div class="pane on" id="p-sold">
    <div class="mut" id="soldMeta"></div>
    <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span></div>
@@ -373,18 +373,32 @@ function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
  renderSold(b);renderOdds(b,R.stop);renderList();paint();}
+function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=window.SOLD;if(!S||!x.lot)return null;
+ const r=S.rows.find(r=>r[1].endsWith('-'+x.lot));if(!r)return null;
+ // Лот знову на аукціоні — значить, ту ставку продавець не прийняв
+ const back=window.LOTS&&window.LOTS.rows.some(l=>l[0].endsWith('-'+x.lot));
+ return back?{v:null,src:`не продано за ${fmt(r[3])}, знову на аукціоні`}:{v:r[3],src:'bid.cars '+r[0].slice(5).split('-').reverse().join('.')};}
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
  const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
   const u=x.url?`<a href="${x.url}" target="_blank" rel="noopener">${x.name||x.lot||'лот'}</a>`:(x.name||x.lot);
-  return `<tr><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'}</div></td><td class="r">${fmt(x.repair)}</td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r"><button class="x" data-i="${i}" title="Прибрати">✕</button></td></tr>`;}).join('');
- $('list').innerHTML='<tr><th>Лот</th><th class="r">Ремонт</th><th class="r">Макс. ставка</th><th></th></tr>'+rows;
+  const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
+  const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
+  return `<tr><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
+   <td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td>
+   <td class="r"><span class="money" style="width:105px;display:inline-block"><input class="price" data-i="${i}" type="number" placeholder="${sf?.v&&!x.price?Math.round(sf.v):'—'}" value="${x.price||''}"></span>
+    <div class="mut">${sf?(x.price?'вручну':sf.src):'ще не продано'}${st?' · '+st:''}</div></td>
+   <td class="r"><button class="x" data-i="${i}" title="Прибрати">✕</button></td></tr>`;}).join('');
+ $('list').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th><th></th></tr>'+rows;
+ $('list').querySelectorAll('.price').forEach(inp=>inp.onchange=()=>{const L=store.get();L[+inp.dataset.i].price=+inp.value||null;store.set(L);renderList();});
  $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});}
+function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),extras:risk().ex,stop:risk().stop});
- store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();};
+ store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t.dataset.t));});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
+showTab(store.get().length?'mine':'sold');
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
 </script></body></html>
