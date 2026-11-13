@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ставка на лот</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f46e5'/%3E%3Cstop offset='1' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M36 8 16 36h13l-3 20 22-30H34z' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -39,7 +40,9 @@ input:focus,select:focus{border-color:var(--acc)}
 .chip{border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:12.5px;font-weight:700;transition:all .15s}
 .chip:hover{border-color:var(--acc)}
 .chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
-.chip.danger.on{background:var(--bad);border-color:var(--bad)}
+.chip.good.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.chip.warn.on{background:#d97706;border-color:#d97706;color:#fff}
+.chip.danger.on{background:var(--bad);border-color:var(--bad);color:#fff}
 .money{position:relative;width:110px;flex:none}.money input{width:100%;padding-left:20px}.money:before{content:'$';position:absolute;left:9px;top:8px;color:var(--mut);font-weight:700}
 /* Результат */
 .result{background:linear-gradient(160deg,rgba(79,70,229,.10),rgba(6,182,212,.06)),var(--card);border-color:rgba(79,70,229,.3)}
@@ -227,7 +230,9 @@ $('doc').innerHTML=DOCS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join(
 chips($('keyChips'),KEYS,v=>keyS=v,v=>keyS===v);
 chips($('startChips'),STARTS,v=>startS=v,v=>startS===v);
 chips($('flagChips'),FLAGS,v=>flags.has(v)?flags.delete(v):flags.add(v),v=>flags.has(v));
-[...$('flagChips').children].forEach(b=>{if(['flood','burn','storm','battery'].includes(b._v))b.classList.add('danger');});
+// Колір вибраної кнопки: зелений — добре, жовтий — ризик, червоний — погано
+const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'danger',burn:'danger',storm:'danger',battery:'danger',hail:'warn',airbag:'warn'};
+['keyChips','startChips','flagChips'].forEach(id=>[...$(id).children].forEach(b=>{if(TONE[b._v])b.classList.add(TONE[b._v]);}));
 $('doc').addEventListener('change',run);
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
