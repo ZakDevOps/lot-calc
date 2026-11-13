@@ -79,6 +79,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 .facts .bad{color:var(--bad)}.facts .ok{color:var(--ok)}
 /* Вкладки */
 #list tr.act td{background:rgba(79,70,229,.14)}#list tr.act td:first-child{box-shadow:inset 3px 0 0 var(--acc);border-radius:8px 0 0 8px}#list tr.act td:last-child{border-radius:0 8px 8px 0}#list tr.act a.open{color:var(--acc)}
+.btn.done{background:var(--ok)}
+@keyframes flash{0%,60%{background:rgba(79,70,229,.45)}100%{background:rgba(79,70,229,.14)}}#list tr.act.flash td{animation:flash 1.2s ease-out}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
@@ -423,7 +425,7 @@ function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto US
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();paint();}
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();markAdd();paint();}
 // Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
 function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
  Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
@@ -472,10 +474,14 @@ function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';re
  if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
  const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
  el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
- el.querySelectorAll('.addn').forEach(bn=>bn.onclick=()=>{const L2=store.get();L2.push(lotToSaved(get(bn.dataset.id)));store.set(L2);run();});
+ el.querySelectorAll('.addn').forEach(bn=>bn.onclick=()=>{if(savedIdx(bn.dataset.id.split('-')[1])>=0)return;const L2=store.get();L2.push(lotToSaved(get(bn.dataset.id)));store.set(L2);run();});
  el.querySelectorAll('.hiden').forEach(bn=>bn.onclick=()=>{seen.add(bn.dataset.id);renderNew();});}
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
+// Лот уже в «Моїх лотах»? Шукаємо за номером лота
+const savedIdx=lot=>lot?store.get().findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;
+function markAdd(){const r=parse($('url').value),i=savedIdx(r?.lot);$('add').textContent=i>=0?'✓ Вже в списку':'＋ Додати';$('add').classList.toggle('done',i>=0);}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
+ if(savedIdx(r.lot)>=0){showTab('mine');const tr=$('list').querySelector('tr.act');if(tr){tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}return;}
  L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
