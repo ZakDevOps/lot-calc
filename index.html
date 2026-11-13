@@ -80,6 +80,13 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 .w.stop{background:rgba(225,29,72,.1);border:1px solid rgba(225,29,72,.35)}
 .w.warn{background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.35)}
 .w.ok{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.3);color:var(--fg)}
+.car{display:grid;grid-template-columns:220px 1fr;gap:16px;margin-top:16px;padding:14px;background:var(--bg);border-radius:14px}
+.car img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--chip)}
+.car h3{margin:0 0 2px;font-size:18px;font-weight:800}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 14px;margin-top:10px}
+.facts div{font-size:13.5px;font-weight:700}.facts span{display:block;font-size:11px;color:var(--mut);font-weight:600}
+.facts .bad{color:var(--bad)}.facts .ok{color:var(--ok)}
+@media (max-width:560px){.car{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}}
 .chip.danger.on{background:var(--bad);border-color:var(--bad);box-shadow:0 4px 12px rgba(225,29,72,.3)}
 </style></head><body>
 <div class="hero"><div class="hero-in">
@@ -93,6 +100,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <div class="url"><input id="url" placeholder="Посилання Copart / IAAI / bid.cars"></div>
 <div id="info"></div>
 <div id="links" class="links"></div>
+<div id="car"></div>
 <div class="grid sec">
 <label>Аукціон<select id="auc"><option>Copart</option><option>IAAI</option></select></label>
 <label>Штат лота<select id="state"></select></label>
@@ -161,6 +169,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:13px;font-weight:600;m
 <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
 </main>
 <script src="sold.js"></script>
+<script src="lots.js"></script>
 <script>
 // Збори аукціону з калькулятора MZ (ставка → збір), між точками — лінійно
 const FEES={Copart:[[10000,1168],[14000,1288],[16000,1246],[18000,1372],[20000,1498],[22000,1624],[24000,1750],[26000,1876]],
@@ -232,7 +241,9 @@ function onUrl(){const r=parse($('url').value);if(!r){$('info').innerHTML='';$('
  if(r.vin){const v=(r.vin||'')[7];if('EDT'.includes(v))fDrv=v;}
  const T=[];if(r.auc)T.push(`<span class="tag a">${r.auc}</span>`);if(r.lot)T.push(`<span class="tag">Лот ${r.lot}</span>`);
  if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
- if(!r.state)T.push(`<span class="tag">Штат оберіть нижче</span>`);
+ const fl=findLot(r);
+ if(fl)T.push(`<span class="tag">${fl.loc}</span>`);
+ else if(!r.state)T.push(`<span class="tag">Лота немає в знімку: штат і стан оберіть нижче</span>`);
  $('info').innerHTML=T.join('');
  const L=[];
  if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
@@ -240,8 +251,52 @@ function onUrl(){const r=parse($('url').value);if(!r){$('info').innerHTML='';$('
  if(r.lot)L.push(['bid.cars',`https://bid.cars/ua/search/results?search-type=typing&query=${r.vin||r.lot}`]);
  if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
  $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
- if(!$('name').value&&r.title)$('name').value=r.title;
+ const lot=findLot(r);if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
+ if(!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
+ renderCar(r,lot,null);
+ if(r.vin)decodeVin(r.vin).then(v=>{if(parse($('url').value)?.lot===r.lot)renderCar(r,lot,v);});
  run();}
+
+// Картка авто: знімок поточних лотів (lots.js) + VIN-декодер NHTSA
+function findLot(r){const L=window.LOTS;if(!L)return null;const C=L.cols;
+ const row=L.rows.find(x=>(r.lot&&x[0].endsWith('-'+r.lot))||(r.vin&&x[1]===r.vin));
+ return row?Object.fromEntries(C.map((c,i)=>[c,row[i]])):null;}
+function docCode(s){s=(s||'').toUpperCase();
+ if(/BILL OF SALE/.test(s))return 'bos';if(/DESTRUCTION|JUNK/.test(s))return 'cert';if(/PARTS|NON-REPAIR/.test(s))return 'parts';
+ if(/MV-907A/.test(s))return 'mv907';if(/^(CLEAR|ORIGINAL|REBUILD)|CERTIFICATE OF TITLE \(/.test(s))return 'clear';return 'salvage';}
+function applyLot(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
+ if(st){$('state').value=st;ship=NEAR.has(st)?'near':'far';}
+ $('doc').value=docCode(l.docFull);
+ keyS=l.key==='Missing'?'no':'yes';
+ startS=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':startS;
+ const d=(l.dmg+' '+l.docFull).toLowerCase();flags=new Set();
+ if(/flood/.test(d))flags.add('flood');if(/burn/.test(d))flags.add('burn');if(/hail/.test(d))flags.add('hail');
+ const g=dmgGroup(l.dmg);fDmg=g;}
+const vinCache={};
+function decodeVin(v){if(!vinCache[v])vinCache[v]=fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${v}?format=json`).then(r=>r.json()).then(j=>j.Results[0]).catch(()=>null);return vinCache[v];}
+const TRIM={DED:'Premium RWD',DEE:'Premium AWD (Long Range)',DET:'Performance AWD',AEE:'Standard AWD',AED:'Standard RWD'};
+function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
+ const vin=r.vin||l?.vin,code=(vin||'').slice(5,8),km=l?.odo?Math.round(l.odo*1.609):null;
+ const year=v?.ModelYear||(vin?.[9]==='T'?'2026':''),model=v?.Model||'Model Y';
+ const trim=v?.Trim||v?.Series||TRIM[code]||(l?.name||'').replace(/^2026 Tesla Model Y,?\s*/i,'')||'—';
+ const F=[];const f=(k,val,cls='')=>{if(val!=null&&val!=='')F.push(`<div class="${cls}"><span>${k}</span>${val}</div>`);};
+ f('Пробіг',km!=null?km.toLocaleString('uk-UA')+' км':(l?'немає даних':'—'),km>50000?'bad':'');
+ f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
+ f('Комплектація',trim);
+ f('Зарядка AC',(v?.BatteryInfo||'').replace(/Onboard Charger:\s*/,''));
+ f('Завод',v?.PlantCity?`${v.PlantCity[0]+v.PlantCity.slice(1).toLowerCase()}, ${v.PlantCountry==='UNITED STATES (USA)'?'США':v.PlantCountry}`:'');
+ if(l){f('Пошкодження',l.dmg,/flood|burn|rollover/i.test(l.dmg)?'bad':'');
+  f('Документ',l.docFull,['cert','parts'].includes(docCode(l.docFull))?'bad':docCode(l.docFull)==='bos'?'bad':'');
+  f('Ключ',l.key==='Missing'?'Немає':'Є',l.key==='Missing'?'bad':'ok');
+  f('Запуск',l.start==='Run / Drive'?'Заводиться і їде':l.start==='Starts'?'Тільки заводиться':'Немає інформації',l.start==='Run / Drive'?'ok':'');
+  f('Локація',l.loc);f('Продавець',l.seller);
+  f('Оцінка bid.cars',l.estMin>1000?`${fmt(l.estMin)}–${fmt(l.estMax)}`:'');
+  f('Аукціон',(l.close||'').replace(' GMT+2',' (Київ)'));}
+ const img=l?.img?`<img src="${l.img}" alt="Фото лота" loading="lazy">`:'';
+ $('car').innerHTML=`<div class="car" style="${img?'':'grid-template-columns:1fr'}">${img}<div><h3>${year} Tesla ${model}</h3>
+ <div class="mut">${vin||''}${l?'':' · пробіг і стан лота невідомі: лота немає в знімку '+(window.LOTS?.updated||'')}</div>
+ <div class="facts">${F.join('')}</div>
+ ${l?`<div class="mut" style="margin-top:8px">Дані лота з bid.cars на ${window.LOTS.updated}. Штат, документ, ключ і стан заповнено автоматично.</div>`:''}</div></div>`;}
 $('state').addEventListener('change',()=>{const s=$('state').value;if(s){ship=NEAR.has(s)?'near':'far';run();}});
 
 function fee(a,p){const t=FEES[a];if(p<=t[0][0])return t[0][1];
