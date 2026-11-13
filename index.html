@@ -525,14 +525,24 @@ const exOf=x=>{const ex=[];if(x.doc==='bos')ex.push(['Документ: Bill of 
 $('share').onclick=async()=>{const L=store.get();if(!L.length){$('shareMsg').textContent='Список порожній.';return;}
  let who='';try{who=localStorage.getItem('shareName')||''}catch(e){}
  who=prompt('Ваше ім’я (його побачить товариш):',who||'Zak');if(!who)return;try{localStorage.setItem('shareName',who)}catch(e){}
- const data={by:who,at:new Date().toISOString().slice(0,10),l:L.map(x=>PACK.map(k=>x[k]??null))};
- const link=location.origin+location.pathname+'#share='+b64e(JSON.stringify(data));
+ // Короткий формат: ім'я*лот_ремонт(сотні)_ціна(сотні)_назва — решту сайт бере зі знімка лотів
+ const parts=L.map(x=>{const full=lotFull(x),id=full?full.lot:(x.auc==='IAAI'?'0-':'1-')+String(x.lot||'').replace(/^[01]-/,'');
+  const def=full?`${full.loc}, ${full.dmg}`:'',nm=x.name&&x.name!==def?encodeURIComponent(x.name):'';
+  return [id,Math.round((x.repair||0)/100),x.price?Math.round(x.price/100):'',nm].join('_').replace(/_+$/,'');});
+ const link=location.origin+location.pathname+'#s='+[encodeURIComponent(who),...parts].join('*');
  try{await navigator.clipboard.writeText(link);$('shareMsg').textContent=`✅ Посилання скопійовано (${L.length} лотів). Надішліть його товаришу.`;}
  catch(e){$('shareMsg').innerHTML=`Скопіюйте посилання: <input value="${link}" onclick="this.select()" style="width:100%">`;}};
 let SHARED=null;
-try{const m=location.hash.match(/share=([\w-]+)/);if(m){const d=JSON.parse(b64d(m[1]));SHARED={by:d.by,at:d.at,lots:d.l.map(a=>Object.fromEntries(PACK.map((k,i)=>[k,a[i]])))};}}catch(e){}
+function lotFull(x){const id=String(x.lot||'').replace(/^[01]-/,'');return id?findLot({lot:id}):null;}
+// Лот зі знімка → запис списку (штат, документ, ключ, стан беруться з даних bid.cars)
+function fromId(id,repair,price,name){const l=findLot({lot:id.replace(/^[01]-/,'')});
+ if(l){const x=lotToSaved(l);return {...x,repair,price:price||null,name:name||x.name};}
+ return {url:`https://bid.cars/ua/lot/${id}/x`,lot:id.replace(/^[01]-/,''),name:name||id,auc:id[0]==='0'?'IAAI':'Copart',state:'',ship:'near',repair,price:price||null,doc:'salvage',key:'yes',start:'unknown',flags:[]};}
+try{let m=location.hash.match(/[#&]s=([^&]+)/);
+ if(m){const [who,...items]=m[1].split('*');SHARED={by:decodeURIComponent(who),at:'',lots:items.map(it=>{const [id,r,p,nm]=it.split('_');return fromId(id,(+r||0)*100,p?(+p)*100:null,nm?decodeURIComponent(nm):'');})};}
+ else if(m=location.hash.match(/share=([\w-]+)/)){const d=JSON.parse(b64d(m[1]));SHARED={by:d.by,at:d.at,lots:d.l.map(a=>Object.fromEntries(PACK.map((k,i)=>[k,a[i]])))};}}catch(e){}
 function renderShared(){if(!SHARED)return;const L=SHARED.lots;$('sharedTab').hidden=false;$('sharedName').textContent=SHARED.by;$('sharedN').textContent=`(${L.length})`;
- $('sharedMeta').textContent=`Список ${SHARED.by} від ${SHARED.at}. Максимальні ставки пораховані з вашими налаштуваннями.`;
+ $('sharedMeta').textContent=`Список ${SHARED.by}${SHARED.at?' від '+SHARED.at:''}. Максимальні ставки пораховані з вашими налаштуваннями.`;
  $('sharedList').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th></tr>'+L.map((x,i)=>{
   const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null,stop=['cert','parts'].includes(x.doc);
   const b=stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:exOf(x),state:x.state,loc:xl?.loc}));
