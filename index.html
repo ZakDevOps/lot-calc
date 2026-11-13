@@ -80,6 +80,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 /* Вкладки */
 #list tr.act td{background:rgba(79,70,229,.14)}#list tr.act td:first-child{box-shadow:inset 3px 0 0 var(--acc);border-radius:8px 0 0 8px}#list tr.act td:last-child{border-radius:0 8px 8px 0}#list tr.act a.open{color:var(--acc)}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 12px}
 .tab{white-space:nowrap;background:none;border:0;padding:8px 12px;font-weight:800;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;font-size:13.5px}
@@ -149,9 +150,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <button class="chip" id="more" style="margin-top:8px">Показати всі</button>
   </div>
   <div class="pane" id="p-mine">
-   <div id="picks"></div>
    <div class="wrap"><table id="list"></table></div>
    <div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою «Додати» біля ставки.</div>
+   <div id="picks" style="margin-top:14px"></div>
   </div>
   <div class="pane" id="p-set">
    <div class="grid">
@@ -190,7 +191,6 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 <script src="caucasus.js"></script>
 <script src="sold.js"></script>
 <script src="lots.js"></script>
-<script src="picks.js"></script>
 <script>
 // Збори аукціону з калькулятора MZ (ставка → збір), між точками — лінійно
 const FEES={Copart:[[10000,1168],[14000,1288],[16000,1246],[18000,1372],[20000,1498],[22000,1624],[24000,1750],[26000,1876]],
@@ -423,7 +423,7 @@ function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto US
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderPicks();paint();}
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();paint();}
 // Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
 function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
  Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
@@ -454,24 +454,33 @@ function openSaved(x){if(!x)return;$('url').value=x.url||x.lot||'';onUrl();
  $('auc').value=x.auc;if(x.state)$('state').value=x.state;ship=x.ship;$('repair').value=x.repair;$('name').value=x.name||'';
  if(x.doc)$('doc').value=x.doc;if(x.key)keyS=x.key;if(x.start)startS=x.start;if(x.flags)flags=new Set(x.flags);
  run();scrollTo({top:0,behavior:'smooth'});}
-// Добірка тижня: показує ще не додані лоти і додає їх у «Мої лоти»
-function lotById(id){const L=window.LOTS;if(!L)return null;const r=L.rows.find(x=>x[0]===id);return r?Object.fromEntries(L.cols.map((c,i)=>[c,r[i]])):null;}
-function renderPicks(){const P=window.PICKS,el=$('picks');if(!P){el.innerHTML='';return;}
- const have=new Set(store.get().map(x=>x.lot)),left=P.lots.filter(p=>!have.has(p[0].split('-')[1]));
- if(!left.length){el.innerHTML='';return;}
- el.innerHTML=`<div class="pick"><div class="row2"><b>⭐ Добірка тижня (${left.length})</b><button class="btn" id="addPicks">Додати всі</button></div><div class="mut" style="margin-bottom:6px">${P.note} · ${P.updated}</div><ol>${left.map(p=>{const l=lotById(p[0]);return `<li><a href="#" class="pk" data-id="${p[0]}">${l?l.close.replace(' GMT+2',''):''}</a> — ${p[1]} · ${p[2]} <a class="mut" href="https://bid.cars/ua/lot/${p[0]}/${l?l.vin:''}" target="_blank" rel="noopener">↗</a></li>`;}).join('')}</ol></div>`;
- el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=lotById(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${a.dataset.id}/${l?l.vin:''}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
- $('addPicks').onclick=()=>{const L=store.get();for(const p of left){const l=lotById(p[0]);if(!l)continue;
-  $('url').value=`https://bid.cars/ua/lot/${p[0]}/${l.vin}`;onUrl();
-  L.push({url:$('url').value,lot:p[0].split('-')[1],name:$('name').value,auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});}
-  store.set(L);$('url').value='';curLot=null;$('info').innerHTML='';$('links').innerHTML='';$('car').innerHTML='';run();showTab('mine');};}
+// Нові лоти: Premium AWD зі знімка, яких ще немає в «Моїх лотах» і які не сховані; аукціон ще попереду
+const seen={get(){try{return new Set(JSON.parse(localStorage.getItem('hidden')||'[]'))}catch(e){return new Set()}},add(id){const h=this.get();h.add(id);try{localStorage.setItem('hidden',JSON.stringify([...h]))}catch(e){}}};
+const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function closeTime(c){const m=(c||'').match(/(\d+) (\w{3}), (\d+):(\d+)/);return m?new Date(Date.UTC(2026,MON[m[2]],+m[1],+m[3]-2,+m[4])):null;}
+function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||'',doc=docCode(l.docFull),key=l.key==='Missing'?'no':'yes',start=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':'unknown';
+ const ex=[];if(doc==='bos')ex.push(['Документ: Bill of sale',500]);if(key==='no')ex.push(['Ключ / картка Tesla',300]);if(start==='start')ex.push(['Ризик: тільки заводиться',500]);
+ return {url:`https://bid.cars/ua/lot/${l.lot}/${l.vin}`,lot:l.lot.split('-')[1],name:`${l.loc}, ${l.dmg}`,auc:l.lot[0]==='1'?'Copart':'IAAI',state:st,ship:NEAR.has(st)?'near':'far',repair:n('repair'),doc,key,start,flags:[],extras:ex,stop:['cert','parts'].includes(doc)};}
+function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
+ const have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>l.vin[5]==='D'&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
+  &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
+  .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
+ if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів немає. Знімок bid.cars на ${L.updated} — попросіть Claude оновити.</div></div>`;return;}
+ el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · знімок bid.cars на ${L.updated}</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
+  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
+ if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
+ const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
+ el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
+ el.querySelectorAll('.addn').forEach(bn=>bn.onclick=()=>{const L2=store.get();L2.push(lotToSaved(get(bn.dataset.id)));store.set(L2);run();});
+ el.querySelectorAll('.hiden').forEach(bn=>bn.onclick=()=>{seen.add(bn.dataset.id);renderNew();});}
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
-showTab(store.get().length||window.PICKS?'mine':'sold');
+showTab('mine');
 if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
