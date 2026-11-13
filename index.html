@@ -73,6 +73,17 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 /* Картка авто */
 .car{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-top:12px;padding:12px;background:var(--bg);border-radius:12px}
 .car img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--chip)}
+.gal{position:fixed;inset:0;z-index:50;background:rgba(5,7,15,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.gal.on{display:flex}.gal .main{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.gal .main img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;user-select:none}
+.gal .nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:0;width:48px;height:48px;border-radius:50%;font-size:24px;cursor:pointer}
+.gal .nav:hover{background:rgba(255,255,255,.25)}.gal .prev{left:8px}.gal .next{right:8px}
+.gal .close{position:absolute;top:14px;right:16px;background:none;border:0;color:#fff;font-size:28px;cursor:pointer;z-index:2}
+.gal .cnt{color:#cfd3e6;font-size:13px;font-weight:700}
+.gal .thumbs{display:flex;gap:6px;overflow-x:auto;max-width:100%;padding-bottom:4px}
+.gal .thumbs img{height:58px;border-radius:6px;opacity:.5;cursor:pointer;flex:none}.gal .thumbs img.on{opacity:1;outline:2px solid var(--acc)}
+.car img{cursor:zoom-in}.car .ph{position:relative}.car .ph span{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px}
+@media (max-width:560px){.gal .nav{width:38px;height:38px;font-size:18px}.gal .thumbs img{height:44px}}
 .car h3{margin:0;font-size:16px;font-weight:800}
 .facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px 12px;margin-top:8px}
 .facts div{font-size:13px;font-weight:700}.facts span{display:block;font-size:10.5px;color:var(--mut);font-weight:700}
@@ -189,6 +200,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
  <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
 </div>
 </div>
+<div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
 <script src="caucasus.js?v=202611132334"></script>
@@ -343,7 +355,7 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
   f('Локація',l.loc);{const t=sellerType(l.seller);f('Продавець',`${l.seller}${t?` · <span class="${SELLER[t][1]}">${SELLER[t][0]}</span>`:''}`);}
   f('Оцінка bid.cars',l.estMin>1000?`${fmt(l.estMin)}–${fmt(l.estMax)}`:'');
   f('Аукціон',(l.close||'').replace(' GMT+2',' (Київ)'));}
- const img=l?.img?`<img src="${l.img}" alt="Фото лота" loading="lazy">`:'';
+ const img=l?.img?`<div class="ph"><img src="${l.img}" alt="Фото лота" loading="lazy" onclick="openGal('${l.img}')"><span>🔍 Фото</span></div>`:'';
  $('car').innerHTML=`<div class="car" style="${img?'':'grid-template-columns:1fr'}">${img}<div><h3>${year} Tesla ${model}</h3>
  <div class="mut">${vin||''}${l?'':' · пробіг і стан лота невідомі: лота немає в знімку '+(window.LOTS?.updated||'')}</div>
  <div class="facts">${F.join('')}</div>
@@ -424,6 +436,20 @@ function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO
  el.innerHTML=R.map(([k,v,d,bar])=>`<div>${k}</div><b>${v}</b>${bar!=null?`<div class="bar"><i style="width:${bar}%"></i></div>`:''}<div class="d">${d}</div>`).join('')+
   (tot!=null?`<div class="tot">Шанс купити за ${fmt(maxB)}</div><b class="tot ${tot>=30?'ok':'bad'}">~${tot}%</b><div class="d">Оцінка за даними знімка, не гарантія.</div>`:'');
  $('stickyCmp').textContent=tot!=null?`шанс купити ~${tot}%`:'';}
+
+// Галерея фото лота: bid.cars нумерує фото …-1.jpg, …-2.jpg; відсутні підміняє заглушкою 640×466
+const G={urls:[],i:0,key:''};
+function openGal(first){const base=first.replace(/\?.*$/,'').replace(/-\d+\.jpg$/,'-');if(G.key!==base){G.key=base;G.urls=[first];loadGal(base);}G.i=0;$('gal').classList.add('on');showGal();}
+function loadGal(base){let stop=false;const found={};
+ const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{stop=true;};im.src=base+k+'.jpg';};
+ next(1);}
+function showGal(){const n=G.urls.length;if(!n)return;G.i=(G.i+n)%n;$('galImg').src=G.urls[G.i];$('galCnt').textContent=`${G.i+1} / ${n}`;
+ $('galThumbs').innerHTML=G.urls.map((u,k)=>`<img src="${u}" class="${k===G.i?'on':''}" onclick="G.i=${k};showGal()">`).join('');
+ $('galThumbs').querySelector('.on')?.scrollIntoView({inline:'center',block:'nearest'});}
+const galStep=d=>{G.i+=d;showGal();},galClose=()=>$('gal').classList.remove('on');
+document.addEventListener('keydown',e=>{if(!$('gal').classList.contains('on'))return;if(e.key==='ArrowRight')galStep(1);if(e.key==='ArrowLeft')galStep(-1);if(e.key==='Escape')galClose();});
+{let x0=null;const m=()=>$('galMain');document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('#galMain'))x0=e.touches[0].clientX;},{passive:true});
+ document.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)galStep(dx<0?1:-1);});}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
 function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto USA, доставка до Клевані':'Caucasus Auto, доставка до Івано-Франківська';const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
