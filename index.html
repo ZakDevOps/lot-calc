@@ -154,7 +154,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
  </div>
 
  <div class="card tabs-card">
-  <div class="tabs"><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
+  <div class="tabs"><button class="tab" data-t="shared" id="sharedTab" hidden>👤 <span id="sharedName"></span> <span id="sharedN"></span></button><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
   <div class="pane on" id="p-sold">
    <div class="mut" id="soldMeta"></div>
    <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fTrim"></span><span class="chips" id="fPrice"></span></div>
@@ -163,7 +163,12 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <div class="wrap"><table id="sold"></table></div>
    <button class="chip" id="more" style="margin-top:8px">Показати всі</button>
   </div>
+  <div class="pane" id="p-shared">
+   <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="mut" id="sharedMeta"></span><button class="btn" id="copyShared">Скопіювати до моїх лотів</button></div>
+   <div class="wrap"><table id="sharedList"></table></div>
+  </div>
   <div class="pane" id="p-mine">
+   <div class="row" style="justify-content:flex-end;margin-bottom:6px"><span class="mut" id="shareMsg" style="flex:1"></span><button class="chip" id="share">🔗 Поділитися списком</button></div>
    <div class="wrap"><table id="list"></table></div>
    <div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою «Додати» біля ставки.</div>
    <div id="picks" style="margin-top:14px"></div>
@@ -259,19 +264,19 @@ const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'
 ['keyChips','startChips','flagChips'].forEach(id=>[...$(id).children].forEach(b=>{if(TONE[b._v])b.classList.add(TONE[b._v]);}));
 $('doc').addEventListener('change',run);
 // Налаштування зберігаються в браузері: спільні — для всіх, решта — окремо для кожного перевізника
-const SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
+const CFG_SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
 const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400}};
 const cfg={get(){try{return JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('cfg',JSON.stringify(v))}catch(e){}}};
 const val=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
 const put=(id,v)=>{if(v==null)return;$(id).type==='checkbox'?$(id).checked=v:$(id).value=v;};
-function saveCfg(){const c=cfg.get(),car=$('carrier').value;c.carrier=car;c.shared=Object.fromEntries(SHARED.map(k=>[k,val(k)]));c[car]=Object.fromEntries(PER.map(k=>[k,val(k)]));cfg.set(c);}
+function saveCfg(){const c=cfg.get(),car=$('carrier').value;c.carrier=car;c.shared=Object.fromEntries(CFG_SHARED.map(k=>[k,val(k)]));c[car]=Object.fromEntries(PER.map(k=>[k,val(k)]));cfg.set(c);}
 function loadCarrier(car){const c=cfg.get();const v={...DEF[car],...(c[car]||{})};PER.forEach(k=>put(k,v[k]));}
 (function(){const c=cfg.get();
  // Стара стандартна сума 900 → 500 (Клайпеда → Львів + Львів → Франківськ ~$100)
  if(c.caucasus&&+c.caucasus.uaDel===900){c.caucasus.uaDel=500;cfg.set(c);}
  if(c.carrier)$('carrier').value=c.carrier;Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
 $('carrier').addEventListener('change',()=>{loadCarrier($('carrier').value);saveCfg();run();});
-[...SHARED,...PER].forEach(id=>$(id).addEventListener(id==='vat'||id==='pens'?'change':'input',saveCfg));
+[...CFG_SHARED,...PER].forEach(id=>$(id).addEventListener(id==='vat'||id==='pens'?'change':'input',saveCfg));
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
 chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
@@ -459,7 +464,7 @@ function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto US
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();markAdd();paint();}
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();renderShared();markAdd();paint();}
 // Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
 function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
  Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
@@ -511,6 +516,30 @@ function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';re
  el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
  el.querySelectorAll('.addn').forEach(bn=>bn.onclick=()=>{if(savedIdx(bn.dataset.id.split('-')[1])>=0)return;const L2=store.get();L2.push(lotToSaved(get(bn.dataset.id)));store.set(L2);run();});
  el.querySelectorAll('.hiden').forEach(bn=>bn.onclick=()=>{seen.add(bn.dataset.id);renderNew();});}
+
+// Поділитися списком: лоти пакуються в посилання (#share=…), сервер не потрібен
+const b64e=str=>btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64d=str=>decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/'))));
+const PACK=['url','lot','name','auc','state','ship','repair','doc','key','start','flags','price'];
+const exOf=x=>{const ex=[];if(x.doc==='bos')ex.push(['Документ: Bill of sale',500]);if(x.key==='no')ex.push(['Ключ / картка Tesla',300]);if(x.start==='start')ex.push(['Ризик: тільки заводиться',500]);return ex;};
+$('share').onclick=async()=>{const L=store.get();if(!L.length){$('shareMsg').textContent='Список порожній.';return;}
+ let who='';try{who=localStorage.getItem('shareName')||''}catch(e){}
+ who=prompt('Ваше ім’я (його побачить товариш):',who||'Zak');if(!who)return;try{localStorage.setItem('shareName',who)}catch(e){}
+ const data={by:who,at:new Date().toISOString().slice(0,10),l:L.map(x=>PACK.map(k=>x[k]??null))};
+ const link=location.origin+location.pathname+'#share='+b64e(JSON.stringify(data));
+ try{await navigator.clipboard.writeText(link);$('shareMsg').textContent=`✅ Посилання скопійовано (${L.length} лотів). Надішліть його товаришу.`;}
+ catch(e){$('shareMsg').innerHTML=`Скопіюйте посилання: <input value="${link}" onclick="this.select()" style="width:100%">`;}};
+let SHARED=null;
+try{const m=location.hash.match(/share=([\w-]+)/);if(m){const d=JSON.parse(b64d(m[1]));SHARED={by:d.by,at:d.at,lots:d.l.map(a=>Object.fromEntries(PACK.map((k,i)=>[k,a[i]])))};}}catch(e){}
+function renderShared(){if(!SHARED)return;const L=SHARED.lots;$('sharedTab').hidden=false;$('sharedName').textContent=SHARED.by;$('sharedN').textContent=`(${L.length})`;
+ $('sharedMeta').textContent=`Список ${SHARED.by} від ${SHARED.at}. Максимальні ставки пораховані з вашими налаштуваннями.`;
+ $('sharedList').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th></tr>'+L.map((x,i)=>{
+  const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null,stop=['cert','parts'].includes(x.doc);
+  const b=stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:exOf(x),state:x.state,loc:xl?.loc}));
+  return `<tr><td><a href="#" class="sopen" data-i="${i}">${x.name||x.lot}</a>${x.url?` <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a>`:''}<div class="mut">${x.auc} · ${x.state||'—'} · ремонт ${fmt(x.repair||0)}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r">${x.price?fmt(x.price):'<span class="mut">—</span>'}</td></tr>`;}).join('');
+ $('sharedList').querySelectorAll('.sopen').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(L[+a.dataset.i]);});}
+$('copyShared').onclick=()=>{if(!SHARED)return;const L=store.get(),ids=new Set(L.map(x=>String(x.lot||'').replace(/^[01]-/,'')));let n=0;for(const x of SHARED.lots){const id=String(x.lot||'').replace(/^[01]-/,'');if(ids.has(id))continue;ids.add(id);
+ L.push({...x,flags:x.flags||[],extras:exOf(x),stop:['cert','parts'].includes(x.doc)});n++;}store.set(L);$('copyShared').textContent=n?`✓ Додано ${n}`:'✓ Усі вже є';run();};
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 // Лот уже в «Моїх лотах»? Шукаємо за номером лота
 const savedIdx=lot=>lot?store.get().findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;
@@ -521,7 +550,7 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
-showTab('mine');
+if(SHARED){renderShared();showTab('shared');}else showTab('mine');
 if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
