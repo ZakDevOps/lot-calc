@@ -111,7 +111,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </style></head><body>
 <div class="hero"><div class="hero-in">
 <h1>⚡ Ставка на лот</h1>
-<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи MZ Auto USA до Клевані.</p>
+<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи <span id="carrierLbl">Caucasus Auto, доставка до Івано-Франківська</span>.</p>
 </div></div>
 <main>
 <div class="layout">
@@ -154,7 +154,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   </div>
   <div class="pane" id="p-set">
    <div class="grid">
-    <label>Брокер, $<input id="broker" type="number" value="300"></label>
+    <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option></select></label>
+    <label>Доставка по Україні, $<input id="uaDel" type="number" value="900"></label>
+    <label>Брокер / комісія, $<input id="broker" type="number" value="500"></label>
     <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
     <label>Запас, $<input id="buf" type="number" value="500"></label>
     <label>Батарея, кВт·год<input id="kwh" type="number" value="79"></label>
@@ -184,6 +186,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
+<script src="caucasus.js"></script>
 <script src="sold.js"></script>
 <script src="lots.js"></script>
 <script src="picks.js"></script>
@@ -239,6 +242,8 @@ chips($('flagChips'),FLAGS,v=>flags.has(v)?flags.delete(v):flags.add(v),v=>flags
 const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'danger',burn:'danger',storm:'danger',battery:'danger',hail:'warn',airbag:'warn'};
 ['keyChips','startChips','flagChips'].forEach(id=>[...$(id).children].forEach(b=>{if(TONE[b._v])b.classList.add(TONE[b._v]);}));
 $('doc').addEventListener('change',run);
+// Різні перевізники — різна комісія за замовчуванням
+$('carrier').addEventListener('change',()=>{$('broker').value=$('carrier').value==='mz'?300:500;run();});
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
 chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
@@ -330,13 +335,23 @@ $('state').addEventListener('change',()=>{const s=$('state').value;if(s){ship=NE
 function fee(a,p){const t=FEES[a];if(p<=t[0][0])return t[0][1];
  for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}
  const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
-function calc(p,o){const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
+// Caucasus: доставка з конкретного майданчика до Клайпеди + по Україні
+function cauShip(o){const T=window.CAUCASUS.ship[o.auc]||{},st=o.state,city=((o.loc||'').replace(/\s*\([A-Z]{2}\)\s*$/,'')).toUpperCase().replace(/\.\.\.$/,'').trim();
+ if(st&&city){const k=Object.keys(T).find(k=>k===st+'|'+city)||Object.keys(T).find(k=>k.startsWith(st+'|'+city));if(k)return [T[k],k.split('|')[1]];}
+ return [o.ship==='near'?1550:2200,null];}
+function cauFee(a,p){const t=window.CAUCASUS.fees[a];if(p<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
+function calcCau(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),[sh,yard]=cauShip(o),ins=(p+f)*C.insurance,ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100;
+ const rows=[['Ставка',p],['Збір '+o.auc,f],[`Доставка ${yard?yard[0]+yard.slice(1).toLowerCase():(o.ship==='near'?'ближній штат':'дальній штат')} → Клайпеда`,sh],['Страховка вантажу 0,9%',ins],['Експедитор',C.expeditor],
+  ['Доставка по Україні (брокер, ПРР, стоянка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
+ return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
+function calc(p,o){if(o.carrier==='caucasus')return calcCau(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
  const rows=[['Ставка',p],['Збір '+o.auc,f],['Доставка до Клевані ('+(o.ship==='near'?'ближній':'дальній')+')',o.shipCost],
   ['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Брокер',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
  if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,cv*o.pens/100]);
  return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
 function maxBid(o){let lo=0,hi=80000;for(let i=0;i<40;i++){const m=(lo+hi)/2;calc(m,o).total<=o.budget?lo=m:hi=m;}return Math.floor(lo/50)*50;}
-function opts(over){const o={auc:$('auc').value,ship,repair:n('repair'),broker:n('broker'),svc:n('svc'),buf:n('buf'),kwh:n('kwh'),vat:$('vat').checked,budget:n('budget'),pens:n('pens'),extras:risk().ex};
+function opts(over){const o={auc:$('auc').value,ship,repair:n('repair'),broker:n('broker'),svc:n('svc'),buf:n('buf'),kwh:n('kwh'),vat:$('vat').checked,budget:n('budget'),pens:n('pens'),extras:risk().ex,carrier:$('carrier').value,uaDel:n('uaDel'),state:$('state').value,loc:curLot?.loc};
  Object.assign(o,over||{});o.shipCost=o.ship==='near'?n('near'):n('far');return o;}
 
 // Схожі продажі
@@ -390,7 +405,7 @@ function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO
  $('stickyCmp').textContent=tot!=null?`шанс купити ~${tot}%`:'';}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
-function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
+function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto USA, доставка до Клевані':'Caucasus Auto, доставка до Івано-Франківська';const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
@@ -406,7 +421,7 @@ function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=win
  return back?{v:null,src:`не продано за ${fmt(r[3])}, знову на аукціоні`}:{v:r[3],src:'bid.cars '+r[0].slice(5).split('-').reverse().join('.')};}
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
- const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
+ const rows=L.map((x,i)=>{const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[],state:x.state,loc:xl?.loc}));
   const u=`<a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
   const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
   const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
