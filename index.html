@@ -383,7 +383,7 @@ function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=win
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
  if(!L.length){$('list').innerHTML='';return;}
  const rows=L.map((x,i)=>{const b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[]}));
-  const u=x.url?`<a href="${x.url}" target="_blank" rel="noopener">${x.name||x.lot||'лот'}</a>`:(x.name||x.lot);
+  const u=`<a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
   const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
   const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
   return `<tr><td>${u}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
@@ -393,10 +393,16 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
    <td class="r"><button class="x" data-i="${i}" title="Прибрати">✕</button></td></tr>`;}).join('');
  $('list').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th><th></th></tr>'+rows;
  $('list').querySelectorAll('.price').forEach(inp=>inp.onchange=()=>{const L=store.get();L[+inp.dataset.i].price=+inp.value||null;store.set(L);renderList();});
- $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});}
+ $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});
+ $('list').querySelectorAll('.open').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(store.get()[+a.dataset.i]);});}
+// Відкрити збережений лот у калькуляторі з тими самими параметрами
+function openSaved(x){if(!x)return;$('url').value=x.url||x.lot||'';onUrl();
+ $('auc').value=x.auc;if(x.state)$('state').value=x.state;ship=x.ship;$('repair').value=x.repair;$('name').value=x.name||'';
+ if(x.doc)$('doc').value=x.doc;if(x.key)keyS=x.key;if(x.start)startS=x.start;if(x.flags)flags=new Set(x.flags);
+ run();scrollTo({top:0,behavior:'smooth'});}
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
- L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),extras:risk().ex,stop:risk().stop});
+ L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
