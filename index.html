@@ -155,7 +155,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="pane" id="p-set">
    <div class="grid">
     <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option></select></label>
-    <label>Доставка по Україні, $<input id="uaDel" type="number" value="900"></label>
+    <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="900"></label>
     <label>Брокер / комісія, $<input id="broker" type="number" value="500"></label>
     <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
     <label>Запас, $<input id="buf" type="number" value="500"></label>
@@ -351,7 +351,7 @@ function cauShip(o){const T=window.CAUCASUS.ship[o.auc]||{},st=o.state,city=((o.
 function cauFee(a,p){const t=window.CAUCASUS.fees[a];if(p<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
 function calcCau(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),[sh,yard]=cauShip(o),ins=(p+f)*C.insurance,ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100;
  const rows=[['Ставка',p],['Збір '+o.auc,f],[`Доставка ${yard?yard[0]+yard.slice(1).toLowerCase():(o.ship==='near'?'ближній штат':'дальній штат')} → Клайпеда`,sh],['Страховка вантажу 0,9%',ins],['Експедитор',C.expeditor],
-  ['Доставка по Україні (брокер, ПРР, стоянка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+  ['Клайпеда → Івано-Франківськ (порт, брокер, стоянка, доставка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
  if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
  return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
 function calc(p,o){if(o.carrier==='caucasus')return calcCau(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
