@@ -508,10 +508,10 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  if(!L.length){$('list').innerHTML='';$('msideN').textContent='';$('msideList').innerHTML='<div class="mut">Порожньо. Додайте лот кнопкою «Додати».</div>';return;}
  // Лот, відкритий зараз у калькуляторі, підсвічуємо
  const cu=$('url').value.trim(),cr=parse(cu);let act=L.findIndex(x=>x.url&&x.url===cu);if(act<0&&cr?.lot)act=L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===cr.lot);
- // Улюблені (★) зверху, далі — за часом аукціону: найближчі першими, минулі й невідомі в кінці
+ // За часом аукціону (★ — лише позначка): найближчі першими, минулі й невідомі в кінці
  const now=Date.now(),tk=xl=>{const t=closeTime(xl?.close)?.getTime();return t&&t>=now?t:t?1e15+(1e14-(now-t)):2e15;};
  const items=L.map((x,i)=>{const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;return {x,i,xl,t:tk(xl),b:x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[],state:x.state,loc:xl?.loc}))};})
-  .map(o=>({...o,sc:lotScore(o.x,o.xl)})).sort((p,q)=>(!!q.x.fav-!!p.x.fav)||(sortBy==='score'?(q.sc.total-p.sc.total):(p.t-q.t)));
+  .map(o=>({...o,sc:lotScore(o.x,o.xl)})).sort((p,q)=>sortBy==='score'?(q.sc.total-p.sc.total)||(p.t-q.t):(p.t-q.t));
  const rows=items.map(({x,i,xl,b,sc})=>{
   const ct=closeTime(xl?.close),when=ct?(ct<new Date()?'<span class="mut">аукціон минув</span>':`🕒 <b>${aucKyiv(ct)}</b>`):'';
   const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a> ${scoreBadge(sc)}${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
