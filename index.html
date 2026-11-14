@@ -527,7 +527,8 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});
  $('list').querySelectorAll('.open').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(store.get()[+a.dataset.i]);});
  $('msideN').textContent=`(${L.length})`;
- $('msideList').innerHTML=items.map(({x,i,xl,b,sc})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
+// Бічна панель — завжди за часом аукціону
+ $('msideList').innerHTML=[...items].sort((p,q)=>p.t-q.t).map(({x,i,xl,b,sc})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
   return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${scoreBadge(sc)} ${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
  $('msideList').querySelectorAll('.mi').forEach(d=>d.onclick=e=>{if(e.target.closest('.star'))return;openSaved(store.get()[+d.dataset.i]);});
  $('msideList').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});
@@ -673,7 +674,8 @@ function lotScore(x,xl){const P=[];const add=(k,v,max,note)=>P.push([k,Math.roun
   add('Carfax',Math.max(0,v),25,`ДТП ${c.acc||0}${c.acc===1?' (поточне)':c.acc>1?' (є попередні)':''}${c.struct?', структурні':''}${c.airbag?', подушки':''}${c.use&&c.use!=='personal'&&c.use!=='unknown'?', '+USE[c.use]:''}`);}
  return {total:P.reduce((s,p)=>s+p[1],0),parts:P,cfx:!!c};}
 const scoreBadge=s=>`<span class="score ${s.total>=70?'hi':s.total>=50?'mid':'lo'}" title="${s.parts.map(p=>`${p[0]}: ${p[1]}/${p[2]} — ${p[3]}`).join('&#10;')}">${s.total}${s.cfx?'':'<small>·без Carfax</small>'}</span>`;
-let sortBy=(()=>{try{return localStorage.getItem('sortBy')||'time'}catch(e){return 'time'}})();
+// Сортування за замовчуванням — за часом; вибір «за рейтингом» діє лише до перезавантаження
+let sortBy='time';try{localStorage.removeItem('sortBy')}catch(e){}
 
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 // Лот уже в «Моїх лотах»? Шукаємо за номером лота
@@ -685,7 +687,7 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
-chips($('sortChips'),[['🕒 За часом','time'],['🏆 За рейтингом','score']],v=>{sortBy=v;try{localStorage.setItem('sortBy',v)}catch(e){}},v=>sortBy===v);
+chips($('sortChips'),[['🕒 За часом','time'],['🏆 За рейтингом','score']],v=>{sortBy=v;},v=>sortBy===v);
 if(SHARED){renderShared();showTab('shared');}else showTab('mine');
 if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
