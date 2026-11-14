@@ -334,7 +334,7 @@ function paint(){document.querySelectorAll('.chip').forEach(b=>{if(b._on)b.class
 function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  if(m=u.match(/copart\.com\/.*lot\/(\d+)/i)){r.auc='Copart';r.lot=m[1];}
  // В адресі IAAI — внутрішній ID сторінки, а не Stock # (як на bid.cars), тому лот за ним не знайти
- else if(m=u.match(/iaai\.com\/.*?(\d{6,})/i)){r.auc='IAAI';r.lot=m[1];r.iaaiItem=true;}
+ else if(m=u.match(/iaai\.com\/.*?(\d{6,})/i)){r.auc='IAAI';r.lot=m[1];r.iaaiItem=true;const st=Object.entries(window.LOTS?.iaai||{}).find(([k,v])=>v===m[1]);if(st){r.lot=st[0].slice(2);r.iaaiItem=false;}}
  else if(m=u.match(/bid\.cars\/.*lot\/([01])-(\d+)(?:\/([^?#]+))?/i)){r.auc=m[1]==='1'?'Copart':'IAAI';r.lot=m[2];
   if(m[3]){const p=decodeURIComponent(m[3]).split('-');const v=p.at(-1);if(/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))r.vin=v.toUpperCase();r.title=p.slice(0,-1).join(' ');}}
  else if(m=u.match(/^\d{7,9}$/)){r.lot=m[0];}
