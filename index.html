@@ -226,9 +226,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 <div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
-<script src="caucasus.js?v=202611142153"></script>
-<script src="sold.js?v=202611142153"></script>
-<script src="lots.js?v=202611142153"></script>
+<script src="caucasus.js?v=202611142226"></script>
+<script src="sold.js?v=202611142226"></script>
+<script src="lots.js?v=202611142226"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
@@ -338,7 +338,13 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
  const T=[];if(r.auc)T.push(`<span class="tag a">${r.auc}</span>`);if(r.lot)T.push(`<span class="tag">Лот ${r.lot}</span>`);
  if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
  const fl=findLot(r);
- if(fl){T.push(`<span class="tag">${fl.loc}</span>`);const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
+ if(fl){T.push(`<span class="tag">${fl.loc}</span>`);
+  // Та сама машина (VIN) на іншому аукціоні чи в історії продажів
+  const twins=(window.LOTS?.rows||[]).filter(x=>x[1]===fl.vin&&x[0]!==fl.lot);
+  twins.forEach(x=>T.push(`<span class="tag badt">🔁 Ця машина також на ${x[0][0]==='0'?'IAAI':'Copart'}: лот ${x[0].slice(2)} · ${(x[13]||'').replace(' GMT+2','')}</span>`));
+  const past=(window.SOLD?.rows||[]).filter(x=>x[2]===fl.vin&&x[1]!==fl.lot);
+  past.forEach(x=>T.push(`<span class="tag">🕘 Раніше на ${x[1][0]==='0'?'IAAI':'Copart'} ${x[0].slice(5).split('-').reverse().join('.')}: ставка ${fmt(x[3])}</span>`));
+  {const si=savedIdx(null,fl.vin),sx=si>=0?store.get()[si]:null;if(sx&&String(sx.lot).replace(/^[01]-/,'')!==fl.lot.slice(2))T.push(`<span class="tag badt">📋 Ця машина вже у «Моїх лотах» як «${sx.name||sx.lot}» (інший аукціон)</span>`);}const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
  else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ В адресі IAAI не номер лота. Вставте <b>Stock #</b> зі сторінки IAAI (напр. 46505799) або посилання bid.cars</span>`);
  else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або попросіть «онови лоти»</span>`);
  $('info').innerHTML=T.join('');
@@ -491,7 +497,10 @@ function imgFallback(im){const m=im.src.match(/^(.*-)(\d+)\.jpg/);const k=m?+m[2
 // Галерея фото лота: bid.cars нумерує фото …-1.jpg, …-2.jpg; відсутні підміняє заглушкою 640×466
 const G={urls:[],i:0,key:''};
 function openGal(first){const base=first.replace(/\?.*$/,'').replace(/-\d+\.jpg$/,'-');if(G.key!==base){G.key=base;G.urls=[first];loadGal(base);}G.i=0;$('gal').classList.add('on');showGal();}
-function loadGal(base){let stop=false;const found={};
+// Номер лота з адреси фото → точна кількість фото зі знімка (без заглушок «No Image Available»)
+function galCount(base){const m=base.match(/mercury\.bid\.cars\/([01]-\d+)\//)||base.match(/images\.bid\.cars\/([01])(\d+)_/);if(!m)return 0;const id=m[2]?m[1]+'-'+m[2]:m[1];return (window.LOTS?.photos||{})[id]||0;}
+function loadGal(base){const N=galCount(base);if(N){G.urls=Array.from({length:N},(_,k)=>base+(k+1)+'.jpg');showGal();return;}
+ let stop=false;const found={};
  const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(/images\.bid\.cars/.test(base)&&im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{if(k<3)next(k+1);else stop=true;};im.src=base+k+'.jpg';};
  next(1);}
 function showGal(){const n=G.urls.length;if(!n)return;G.i=(G.i+n)%n;$('galImg').src=G.urls[G.i];$('galCnt').textContent=`${G.i+1} / ${n}`;
@@ -561,9 +570,9 @@ function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||''
  const ex=[];if(doc==='bos')ex.push(['Документ: Bill of sale',500]);if(key==='no')ex.push(['Ключ / картка Tesla',300]);if(start==='start')ex.push(['Ризик: тільки заводиться',500]);
  return {url:`https://bid.cars/ua/lot/${l.lot}/${l.vin}`,lot:l.lot.split('-')[1],name:`${l.loc}, ${l.dmg}`,auc:l.lot[0]==='1'?'Copart':'IAAI',state:st,ship:NEAR.has(st)?'near':'far',repair:n('repair'),doc,key,start,flags:[],extras:ex,stop:['cert','parts'].includes(doc)};}
 function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
- const have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
+ const haveVin=new Set(store.get().map(vinOfSaved).filter(Boolean)),have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
  const fs=L.firstSeen||{},since=L.newSince||'';
- const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&premiumLike(l.vin)&&!notPrem.has(l.lot)&&'ETF'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&premiumLike(l.vin)&&!notPrem.has(l.lot)&&'ETF'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!haveVin.has(l.vin)&&!hid.has(l.lot)
   &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
   .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
  if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
@@ -692,10 +701,13 @@ let sortBy='time';try{localStorage.removeItem('sortBy')}catch(e){}
 
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 // Лот уже в «Моїх лотах»? Шукаємо за номером лота
-const savedIdx=lot=>lot?store.get().findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;
-function markAdd(){const r=parse($('url').value),i=savedIdx(r?.lot);$('add').textContent=i>=0?'✓ Вже в списку':'＋ Додати';$('add').classList.toggle('done',i>=0);}
+const vinOfSaved=x=>{const l=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;return l?.vin||((x.url||'').match(/\b(7SA[A-Z0-9]{14})\b/i)||[])[1]?.toUpperCase()||null;};
+// Лот уже в списку: той самий номер або той самий VIN (машину перевиставили на іншому аукціоні)
+const savedIdx=(lot,vin)=>{const L=store.get();let i=lot?L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;if(i<0&&vin)i=L.findIndex(x=>vinOfSaved(x)===vin);return i;};
+const curVin=()=>{const r=parse($('url').value);return r?(findLot(r)?.vin||r.vin||null):null;};
+function markAdd(){const r=parse($('url').value),i=savedIdx(r?.lot,curVin());$('add').textContent=i>=0?'✓ Вже в списку':'＋ Додати';$('add').classList.toggle('done',i>=0);}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
- if(savedIdx(r.lot)>=0){showTab('mine');const tr=$('list').querySelector('tr.act');if(tr){tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}return;}
+ if(savedIdx(r.lot,curVin())>=0){showTab('mine');const tr=$('list').querySelector('tr.act');if(tr){tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}return;}
  L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
