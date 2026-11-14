@@ -101,6 +101,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 @keyframes flash{0%,60%{background:rgba(79,70,229,.45)}100%{background:rgba(79,70,229,.14)}}#list tr.act.flash td{animation:flash 1.2s ease-out}
 .star{background:none;border:0;cursor:pointer;font-size:17px;color:#f5b301;padding:0 2px;line-height:1}.star:not(.on){color:var(--mut)}
 #list tr.fav td{background:rgba(245,179,1,.07)}#list .when{font-size:12.5px;margin:2px 0}
+.np{background:none;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-size:10.5px;font-weight:700;padding:0 7px;cursor:pointer;margin-left:2px}.np:hover{color:var(--bad);border-color:var(--bad)}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
@@ -234,6 +235,11 @@ const STATES='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA 
 const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' '));
 const DMG=[['Легке',2000,'front'],['Перед',4000,'front'],['Зад',4000,'rear'],['Бік',5000,'side'],['Важке',7000,'front']];
 const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
+// Ручні позначки «не Premium»: VIN Tesla не завжди розрізняє комплектацію (той самий код у різних версій)
+const NOT_PREMIUM_DEFAULT=['0-46098062'];
+const notPrem=(()=>{let a=[];try{a=JSON.parse(localStorage.getItem('notPrem')||'null')}catch(e){}return new Set(a||NOT_PREMIUM_DEFAULT);})();
+const saveNP=()=>{try{localStorage.setItem('notPrem',JSON.stringify([...notPrem]))}catch(e){}};
+document.addEventListener('click',e=>{const b=e.target.closest('.np');if(!b)return;e.preventDefault();const id=b.dataset.lot;notPrem.has(id)?notPrem.delete(id):notPrem.add(id);saveNP();run();});
 let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, fTrim='premium', showAll=false;
 let keyS='yes', startS='run', flags=new Set(), curLot=null;
 // Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
@@ -365,7 +371,7 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
  f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
  f('Комплектація',trim);
  // Оснащення за VIN: у Tesla немає пакетів опцій, версія визначає все
- const eq=code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
+ const eq=l&&notPrem.has(l.lot)?['Позначено вами: не Premium','bad']:code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
  if(eq)f('Оснащення',eq[0],eq[1]);
  f('Зарядка AC',(v?.BatteryInfo||'').replace(/Onboard Charger:\s*/,''));
  f('Завод',v?.PlantCity?`${v.PlantCity[0]+v.PlantCity.slice(1).toLowerCase()}, ${v.PlantCountry==='UNITED STATES (USA)'?'США':v.PlantCountry}`:'');
@@ -411,7 +417,7 @@ const stOf=loc=>((loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
 const DMG_UA={front:'перед',rear:'зад',side:'бік',other:'інше'};
 function sold(){const S=window.SOLD;if(!S){$('soldMeta').textContent='Дані про продажі не завантажились.';return [];}
  const C=S.cols,rows=S.rows.map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]])));
- return rows.filter(r=>(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)&&(fDrv==='all'||(r.vin||'')[7]===fDrv)&&(fTrim==='all'||(r.vin||'')[5]==='D'));}
+ return rows.filter(r=>(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)&&(fDrv==='all'||(r.vin||'')[7]===fDrv)&&(fTrim==='all'||((r.vin||'')[5]==='D'&&!notPrem.has(r.lot))));}
 const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
 function renderSold(maxB){const S=window.SOLD,R=sold();
  if(S)$('soldMeta').textContent=`Tesla Model Y 2026 з архіву bid.cars · оновлено ${S.updated} · ${S.rows.length} продажів за 7 днів`;
@@ -429,7 +435,7 @@ function renderSold(maxB){const S=window.SOLD,R=sold();
  $('more').style.display=list.length>12?'':'none';$('more').textContent=showAll?'Згорнути':`Показати всі ${list.length}`;
  $('sold').innerHTML='<tr><th>Дата</th><th>Лот</th><th class="hide-s">Пробіг</th><th class="r">Ставка</th></tr>'+show.map(r=>{
   const v=ver(r.vin),cls=v==='AWD'?'awd':v==='Performance'?'perf':'';
-  return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}</div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
+  return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}${notPrem.has(r.lot)?' · <span class="bad">не Premium</span>':''} · <button class="np" data-lot="${r.lot}" title="Позначити, що це не Premium (прибрати зі статистики)">${notPrem.has(r.lot)?'↺ повернути':'не Premium?'}</button></div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
 
 // Шанси: популярність (перегляди), виграти (схожі продажі), що страхова віддасть (історія «Не продано»)
 const POP=[[10,'низька',1.15],[40,'середня',1],[150,'висока',0.85],[1e9,'дуже висока',0.65]];
@@ -460,13 +466,13 @@ function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO
 
 // Якщо фото лота не вантажиться — пробуємо наступні …-2.jpg, …-3.jpg, далі заглушка
 // Заглушка bid.cars «No Image Available» має розмір 640×466 — вважаємо, що фото немає
-function imgCheck(im){if(im.naturalWidth===640&&im.naturalHeight===466)imgFallback(im);}
+function imgCheck(im){if(/images\.bid\.cars/.test(im.src)&&im.naturalWidth===640&&im.naturalHeight===466)imgFallback(im);}
 function imgFallback(im){const m=im.src.match(/^(.*-)(\d+)\.jpg/);const k=m?+m[2]:9;if(m&&k<4){im.src=m[1]+(k+1)+'.jpg';return;}const big=!!im.closest('.ph');im.replaceWith(Object.assign(document.createElement('div'),{className:big?'noimg big':'noimg',textContent:big?'📷 Фото ще немає на bid.cars — спробуйте пізніше або відкрийте лот ↗':'🚗'}));}
 // Галерея фото лота: bid.cars нумерує фото …-1.jpg, …-2.jpg; відсутні підміняє заглушкою 640×466
 const G={urls:[],i:0,key:''};
 function openGal(first){const base=first.replace(/\?.*$/,'').replace(/-\d+\.jpg$/,'-');if(G.key!==base){G.key=base;G.urls=[first];loadGal(base);}G.i=0;$('gal').classList.add('on');showGal();}
 function loadGal(base){let stop=false;const found={};
- const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{if(k<3)next(k+1);else stop=true;};im.src=base+k+'.jpg';};
+ const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(/images\.bid\.cars/.test(base)&&im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{if(k<3)next(k+1);else stop=true;};im.src=base+k+'.jpg';};
  next(1);}
 function showGal(){const n=G.urls.length;if(!n)return;G.i=(G.i+n)%n;$('galImg').src=G.urls[G.i];$('galCnt').textContent=`${G.i+1} / ${n}`;
  $('galThumbs').innerHTML=G.urls.map((u,k)=>`<img src="${u}" class="${k===G.i?'on':''}" onclick="G.i=${k};showGal()">`).join('');
@@ -535,12 +541,12 @@ function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||''
 function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
  const have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
  const fs=L.firstSeen||{},since=L.newSince||'';
- const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&l.vin[5]==='D'&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&l.vin[5]==='D'&&!notPrem.has(l.lot)&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
   &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
   .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
  if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
  el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · нові з останнього оновлення</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
-  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
+  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="np" data-lot="${l.lot}" title="Це не Premium">не Premium</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
  if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
  const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
  el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
