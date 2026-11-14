@@ -106,6 +106,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 .cfxg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:8px}.cfxg label{font-size:11px}.ck{display:flex;flex-direction:row;align-items:center;gap:5px;color:var(--fg);font-size:12px;font-weight:600}.ck input{width:auto}
 .score{display:inline-flex;align-items:baseline;gap:3px;font-size:11.5px;font-weight:800;padding:1px 7px;border-radius:999px;cursor:help;vertical-align:middle}.score small{font-weight:600;font-size:9.5px;opacity:.75}
 .score.hi{background:rgba(5,150,105,.16);color:var(--ok)}.score.mid{background:rgba(217,119,6,.16);color:#d97706}.score.lo{background:rgba(225,29,72,.14);color:var(--bad)}
+.yr{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--chip);color:var(--mut);vertical-align:middle}.facts .warn{color:#d97706}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
@@ -174,7 +175,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="tabs"><button class="tab" data-t="shared" id="sharedTab" hidden>👤 <span id="sharedName"></span> <span id="sharedN"></span></button><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
   <div class="pane on" id="p-sold">
    <div class="mut" id="soldMeta"></div>
-   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fTrim"></span><span class="chips" id="fPrice"></span></div>
+   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fYear"></span><span class="chips" id="fTrim"></span><span class="chips" id="fPrice"></span></div>
    <div class="mut" id="priceNote" style="margin-top:6px"></div>
    <div class="stats" id="stats"></div>
    <div class="wrap"><table id="sold"></table></div>
@@ -225,9 +226,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 <div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
-<script src="caucasus.js?v=202611142129"></script>
-<script src="sold.js?v=202611142129"></script>
-<script src="lots.js?v=202611142129"></script>
+<script src="caucasus.js?v=202611142153"></script>
+<script src="sold.js?v=202611142153"></script>
+<script src="lots.js?v=202611142153"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
@@ -246,7 +247,7 @@ const NOT_PREMIUM_DEFAULT=['0-46098062'];
 const notPrem=(()=>{let a=[];try{a=JSON.parse(localStorage.getItem('notPrem')||'null')}catch(e){}return new Set(a||NOT_PREMIUM_DEFAULT);})();
 const saveNP=()=>{try{localStorage.setItem('notPrem',JSON.stringify([...notPrem]))}catch(e){}};
 document.addEventListener('click',e=>{const b=e.target.closest('.np');if(!b)return;e.preventDefault();const id=b.dataset.lot;notPrem.has(id)?notPrem.delete(id):notPrem.add(id);saveNP();run();});
-let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, fTrim='premium', showAll=false;
+let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, fTrim='premium', fYear='auto', showAll=false;
 let keyS='yes', startS='run', flags=new Set(), curLot=null;
 // Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
 const DOCS=[
@@ -307,6 +308,7 @@ chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],
 chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
 chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
 // Комплектація за VIN (6-й символ): D — Premium, A — Standard
+chips($('fYear'),[['Рік лота','auto'],['2026',2026],['2025',2025],['Усі роки','all']],v=>fYear=v,v=>fYear===v);
 chips($('fTrim'),[['Тільки Premium','premium'],['Усі комплектації','all']],v=>fTrim=v,v=>fTrim===v);
 // Ціна: показувати продажі поруч із нашою максимальною ставкою
 chips($('fPrice'),[['±$1k від ставки',1000],['±$2k',2000],['Усі ціни',0]],v=>fPrice=v,v=>fPrice===v);
@@ -322,7 +324,12 @@ function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  // Copart кладе штат і місто в кінець посилання: …-tesla-model-y-ny-albany
  if(m=u.match(/lot\/\d+\/[^?#]*?-([a-z]{2})-[a-z-]+\/?(?:[?#]|$)/i))if(STATES.includes(m[1].toUpperCase()))r.state=m[1].toUpperCase();
  return r;}
-const ver=vin=>({E:'AWD',D:'RWD',T:'Performance'})[(vin||'')[7]]||'?';
+// Рік за 10-м символом VIN: S — 2025, T — 2026
+const yearOf=vin=>({S:2025,T:2026,R:2024})[(vin||'')[9]]||null;
+// Привід/версія за 8-м символом: E — AWD, D — RWD, T/F — Performance (F — у 2025)
+const ver=vin=>({E:'AWD',D:'RWD',T:'Performance',F:'Performance'})[(vin||'')[7]]||'?';
+// «Premium»: у 2026 — 6-й символ D (A — Standard); у 2025 Standard не було, тож будь-який
+const premiumLike=vin=>yearOf(vin)===2025||(vin||'')[5]==='D';
 function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;$('info').innerHTML='';$('links').innerHTML='';run();return;}
  if(r.auc)$('auc').value=r.auc;
  if(r.state){$('state').value=r.state;ship=NEAR.has(r.state)?'near':'far';}
@@ -370,15 +377,15 @@ function decodeVin(v){if(!vinCache[v])vinCache[v]=fetch(`https://vpic.nhtsa.dot.
 const TRIM={DED:'Premium RWD',DEE:'Premium AWD (Long Range)',DET:'Performance AWD',AEE:'Standard AWD',AED:'Standard RWD'};
 function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
  const vin=r.vin||l?.vin,code=(vin||'').slice(5,8),km=l?.odo?Math.round(l.odo*1.609):null;
- const year=v?.ModelYear||(vin?.[9]==='T'?'2026':''),model=v?.Model||'Model Y';
- const trim=v?.Trim||v?.Series||TRIM[code]||(l?.name||'').replace(/^2026 Tesla Model Y,?\s*/i,'')||'—';
+ const year=v?.ModelYear||yearOf(vin)||'',model=v?.Model||'Model Y',y25=yearOf(vin)===2025;
+ const trim=y25?({E:'Long Range AWD',D:'Long Range RWD',F:'Performance'}[(vin||'')[7]]||'—'):v?.Trim||v?.Series||TRIM[code]||(l?.name||'').replace(/^2026 Tesla Model Y,?\s*/i,'')||'—';
  const F=[];const f=(k,val,cls='')=>{if(val!=null&&val!=='')F.push(`<div class="${cls}"><span>${k}</span>${val}</div>`);};
  f('Пробіг',km!=null?km.toLocaleString('uk-UA')+' км':(l?'немає даних':'—'),km>50000?'bad':'');
  f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
  f('Комплектація',trim);
  f('Тепловий насос','✅ є (стандарт на Model Y з 2021)','ok');
  // Оснащення за VIN: у Tesla немає пакетів опцій, версія визначає все
- const eq=l&&notPrem.has(l.lot)?['Позначено вами: не Premium','bad']:code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
+ const eq=y25?['2025: Juniper (вентиляція, задній екран, світлова смуга) або стара Model Y — перевірте фото','warn']:l&&notPrem.has(l.lot)?['Позначено вами: не Premium','bad']:code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
  if(eq)f('Оснащення',eq[0],eq[1]);
  f('Зарядка AC',(v?.BatteryInfo||'').replace(/Onboard Charger:\s*/,''));
  f('Завод',v?.PlantCity?`${v.PlantCity[0]+v.PlantCity.slice(1).toLowerCase()}, ${v.PlantCountry==='UNITED STATES (USA)'?'США':v.PlantCountry}`:'');
@@ -424,10 +431,12 @@ const stOf=loc=>((loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
 const DMG_UA={front:'перед',rear:'зад',side:'бік',other:'інше'};
 function sold(){const S=window.SOLD;if(!S){$('soldMeta').textContent='Дані про продажі не завантажились.';return [];}
  const C=S.cols,rows=S.rows.map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]])));
- return rows.filter(r=>(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)&&(fDrv==='all'||(r.vin||'')[7]===fDrv)&&(fTrim==='all'||((r.vin||'')[5]==='D'&&!notPrem.has(r.lot))));}
+ const Y=fYear==='auto'?(yearOf(curLot?.vin)||2026):fYear;
+ return rows.filter(r=>(Y==='all'||yearOf(r.vin)===+Y)&&(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)
+  &&(fDrv==='all'||(r.vin||'')[7]===fDrv||(fDrv==='T'&&(r.vin||'')[7]==='F'))&&(fTrim==='all'||(premiumLike(r.vin)&&!notPrem.has(r.lot))));}
 const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
 function renderSold(maxB){const S=window.SOLD,R=sold();
- if(S)$('soldMeta').textContent=`Tesla Model Y 2026 з архіву bid.cars · оновлено ${S.updated} · ${S.rows.length} продажів за 7 днів`;
+ {const Y=fYear==='auto'?(yearOf(curLot?.vin)||2026):fYear;if(S)$('soldMeta').textContent=`Tesla Model Y ${Y==='all'?'2025–2026':Y} з архіву bid.cars · оновлено ${S.updated}${Y===2025||Y==='2025'?' · 2025: серед них можуть бути старі Model Y до рестайлу':''}`;}
  const b=R.map(r=>r.bid);
  if(!b.length){window.__simPct=null;$('stickyCmp').textContent='';$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
  const m=med(b),under=maxB>0?b.filter(x=>x<=maxB).length:0;
@@ -442,7 +451,7 @@ function renderSold(maxB){const S=window.SOLD,R=sold();
  $('more').style.display=list.length>12?'':'none';$('more').textContent=showAll?'Згорнути':`Показати всі ${list.length}`;
  $('sold').innerHTML='<tr><th>Дата</th><th>Лот</th><th class="hide-s">Пробіг</th><th class="r">Ставка</th></tr>'+show.map(r=>{
   const v=ver(r.vin),cls=v==='AWD'?'awd':v==='Performance'?'perf':'';
-  return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}${notPrem.has(r.lot)?' · <span class="bad">не Premium</span>':''} · <button class="np" data-lot="${r.lot}" title="Позначити, що це не Premium (прибрати зі статистики)">${notPrem.has(r.lot)?'↺ повернути':'не Premium?'}</button></div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
+  return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a> <span class="yr">${yearOf(r.vin)||''}</span><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}${notPrem.has(r.lot)?' · <span class="bad">не Premium</span>':''} · <button class="np" data-lot="${r.lot}" title="Позначити, що це не Premium (прибрати зі статистики)">${notPrem.has(r.lot)?'↺ повернути':'не Premium?'}</button></div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
 
 // Шанси: популярність (перегляди), виграти (схожі продажі), що страхова віддасть (історія «Не продано»)
 const POP=[[10,'низька',1.15],[40,'середня',1],[150,'висока',0.85],[1e9,'дуже висока',0.65]];
@@ -514,7 +523,7 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
   .map(o=>({...o,sc:lotScore(o.x,o.xl)})).sort((p,q)=>sortBy==='score'?(q.sc.total-p.sc.total)||(p.t-q.t):(p.t-q.t));
  const rows=items.map(({x,i,xl,b,sc})=>{
   const ct=closeTime(xl?.close),when=ct?(ct<new Date()?'<span class="mut">аукціон минув</span>':`🕒 <b>${aucKyiv(ct)}</b>`):'';
-  const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a> ${scoreBadge(sc)}${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
+  const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${yearOf(xl?.vin)?` <span class="yr">${yearOf(xl.vin)}</span>`:''} ${scoreBadge(sc)}${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
   const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
   const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
   return `<tr class="${i===act?'act':''}${x.fav?' fav':''}"><td>${u}${when?`<div class="when">${when}</div>`:''}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
@@ -529,7 +538,7 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  $('msideN').textContent=`(${L.length})`;
 // Бічна панель — завжди за часом аукціону
  $('msideList').innerHTML=[...items].sort((p,q)=>p.t-q.t).map(({x,i,xl,b,sc})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
-  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${scoreBadge(sc)} ${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
+  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}${yearOf(xl?.vin)?` <span class="yr">${yearOf(xl.vin)}</span>`:''}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${scoreBadge(sc)} ${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
  $('msideList').querySelectorAll('.mi').forEach(d=>d.onclick=e=>{if(e.target.closest('.star'))return;openSaved(store.get()[+d.dataset.i]);});
  $('msideList').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});
  $('list').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});}
@@ -550,12 +559,12 @@ function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||''
 function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
  const have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
  const fs=L.firstSeen||{},since=L.newSince||'';
- const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&l.vin[5]==='D'&&!notPrem.has(l.lot)&&'ET'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&premiumLike(l.vin)&&!notPrem.has(l.lot)&&'ETF'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!hid.has(l.lot)
   &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
   .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
  if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
  el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · нові з останнього оновлення</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
-  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="np" data-lot="${l.lot}" title="Це не Premium">не Premium</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
+  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a> <span class="yr">${yearOf(l.vin)||''}</span><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="np" data-lot="${l.lot}" title="Це не Premium">не Premium</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
  if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
  const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
  el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
@@ -660,7 +669,7 @@ function lotScore(x,xl){const P=[];const add=(k,v,max,note)=>P.push([k,Math.roun
  if(x.stop)return {total:0,parts:[['Заборонено ввозити / не реєструється',0,100]]};
  const b=maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:x.extras||[],state:x.state,loc:xl?.loc}));
  // Ціна: наша макс. ставка проти медіани схожих продажів Premium AWD
- const S=window.SOLD,C=S?.cols||[],rows=(S?.rows||[]).map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]]))).filter(r=>(r.vin||'')[5]==='D'&&(r.vin||'')[7]==='E'&&!notPrem.has(r.lot));
+ const S=window.SOLD,C=S?.cols||[],rows=(S?.rows||[]).map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]]))).filter(r=>yearOf(r.vin)===(yearOf(xl?.vin)||2026)&&premiumLike(r.vin)&&(r.vin||'')[7]==='E'&&!notPrem.has(r.lot));
  const g=xl?dmgGroup(xl.dmg):null,same=rows.filter(r=>dmgGroup(r.dmg)===g),pool=same.length>=5?same:rows,m=pool.length?med(pool.map(r=>r.bid)):null;
  add('Запас ціни',m?Math.max(0,Math.min(1,(b/m-0.75)/0.35))*25:12,25,m?`макс. ставка ${fmt(b)} проти медіани ${fmt(m)}`:'немає даних');
  const c=cfx.get(String(x.lot||'').replace(/^[01]-/,''));const km=xl?.odo?xl.odo*1.609:(c?.lastOdo?c.lastOdo*1.609:null);
