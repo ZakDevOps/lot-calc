@@ -219,9 +219,9 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 <div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
 <div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
 </main>
-<script src="caucasus.js?v=202611141328"></script>
-<script src="sold.js?v=202611141328"></script>
-<script src="lots.js?v=202611141328"></script>
+<script src="caucasus.js?v=202611141502"></script>
+<script src="sold.js?v=202611141502"></script>
+<script src="lots.js?v=202611141502"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
