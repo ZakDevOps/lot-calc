@@ -17,6 +17,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.5 Manrope,-appl
 main{padding:0 16px 40px;margin-top:-40px}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
 .side{position:sticky;top:12px}
+.mside{display:none}
+@media (min-width:1480px){.hero-in,main{max-width:1560px}.layout{grid-template-columns:300px minmax(0,1fr) 360px}.mside{display:block;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.mi{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:7px;border-radius:10px;cursor:pointer;align-items:center}.mi:hover{background:var(--bg)}.mi.act{background:rgba(79,70,229,.16);box-shadow:inset 3px 0 0 var(--acc)}
+.mi img,.mi .noimg{width:56px;height:42px;object-fit:cover;border-radius:6px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:18px}
+.noimg.big{width:100%;aspect-ratio:4/3;border-radius:8px;background:var(--chip);display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-size:12.5px;color:var(--mut);font-weight:700}
+.mi .t{font-size:12.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mi .s{font-size:11px;color:var(--mut)}.mi .b{font-weight:800;font-size:13px}
+.mi .star{font-size:14px;padding:0}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
 h2{font-size:15px;margin:0 0 10px;font-weight:800}
 .mut{color:var(--mut);font-size:12.5px}
@@ -132,6 +139,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </div></div>
 <main>
 <div class="layout">
+<aside class="mside" id="mside"><div class="card"><h2>📋 Мої лоти <span class="mut" id="msideN"></span></h2><div id="msideList"></div></div></aside>
 <div class="left">
  <div class="card">
   <div class="url">🔗<input id="url" placeholder="Посилання Copart / IAAI / bid.cars або номер лота"></div>
@@ -364,7 +372,7 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
   f('Локація',l.loc);{const t=sellerType(l.seller);f('Продавець',`${l.seller}${t?` · <span class="${SELLER[t][1]}">${SELLER[t][0]}</span>`:''}`);}
   f('Оцінка bid.cars',l.estMin>1000?`${fmt(l.estMin)}–${fmt(l.estMax)}`:'');
   f('Аукціон',(l.close||'').replace(' GMT+2',' (Київ)'));}
- const img=l?.img?`<div class="ph"><img src="${l.img}" alt="Фото лота" loading="lazy" onclick="openGal('${l.img}')"><span>🔍 Фото</span></div>`:'';
+ const img=l?.img?`<div class="ph"><img src="${l.img}" alt="Фото лота" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)" onclick="openGal(this.src)"><span>🔍 Фото</span></div>`:'';
  $('car').innerHTML=`<div class="car" style="${img?'':'grid-template-columns:1fr'}">${img}<div><h3>${year} Tesla ${model}</h3>
  <div class="mut">${vin||''}${l?'':' · пробіг і стан лота невідомі: лота немає в знімку '+(window.LOTS?.updated||'')}</div>
  <div class="facts">${F.join('')}</div>
@@ -446,11 +454,15 @@ function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO
   (tot!=null?`<div class="tot">Шанс купити за ${fmt(maxB)}</div><b class="tot ${tot>=30?'ok':'bad'}">~${tot}%</b><div class="d">Оцінка за даними знімка, не гарантія.</div>`:'');
  $('stickyCmp').textContent=tot!=null?`шанс купити ~${tot}%`:'';}
 
+// Якщо фото лота не вантажиться — пробуємо наступні …-2.jpg, …-3.jpg, далі заглушка
+// Заглушка bid.cars «No Image Available» має розмір 640×466 — вважаємо, що фото немає
+function imgCheck(im){if(im.naturalWidth===640&&im.naturalHeight===466)imgFallback(im);}
+function imgFallback(im){const m=im.src.match(/^(.*-)(\d+)\.jpg/);const k=m?+m[2]:9;if(m&&k<4){im.src=m[1]+(k+1)+'.jpg';return;}const big=!!im.closest('.ph');im.replaceWith(Object.assign(document.createElement('div'),{className:big?'noimg big':'noimg',textContent:big?'📷 Фото ще немає на bid.cars — спробуйте пізніше або відкрийте лот ↗':'🚗'}));}
 // Галерея фото лота: bid.cars нумерує фото …-1.jpg, …-2.jpg; відсутні підміняє заглушкою 640×466
 const G={urls:[],i:0,key:''};
 function openGal(first){const base=first.replace(/\?.*$/,'').replace(/-\d+\.jpg$/,'-');if(G.key!==base){G.key=base;G.urls=[first];loadGal(base);}G.i=0;$('gal').classList.add('on');showGal();}
 function loadGal(base){let stop=false;const found={};
- const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{stop=true;};im.src=base+k+'.jpg';};
+ const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{if(k<3)next(k+1);else stop=true;};im.src=base+k+'.jpg';};
  next(1);}
 function showGal(){const n=G.urls.length;if(!n)return;G.i=(G.i+n)%n;$('galImg').src=G.urls[G.i];$('galCnt').textContent=`${G.i+1} / ${n}`;
  $('galThumbs').innerHTML=G.urls.map((u,k)=>`<img src="${u}" class="${k===G.i?'on':''}" onclick="G.i=${k};showGal()">`).join('');
@@ -476,7 +488,7 @@ function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=win
  const back=window.LOTS&&window.LOTS.rows.some(l=>l[0].endsWith('-'+x.lot));
  return back?{v:null,src:`не продано за ${fmt(r[3])}, знову на аукціоні`}:{v:r[3],src:'bid.cars '+r[0].slice(5).split('-').reverse().join('.')};}
 function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
- if(!L.length){$('list').innerHTML='';return;}
+ if(!L.length){$('list').innerHTML='';$('msideN').textContent='';$('msideList').innerHTML='<div class="mut">Порожньо. Додайте лот кнопкою «Додати».</div>';return;}
  // Лот, відкритий зараз у калькуляторі, підсвічуємо
  const cu=$('url').value.trim(),cr=parse(cu);let act=L.findIndex(x=>x.url&&x.url===cu);if(act<0&&cr?.lot)act=L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===cr.lot);
  // Улюблені (★) зверху, далі — за максимальною ставкою від більшої
@@ -496,6 +508,11 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  $('list').querySelectorAll('.price').forEach(inp=>inp.onchange=()=>{const L=store.get();L[+inp.dataset.i].price=+inp.value||null;store.set(L);renderList();});
  $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});
  $('list').querySelectorAll('.open').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(store.get()[+a.dataset.i]);});
+ $('msideN').textContent=`(${L.length})`;
+ $('msideList').innerHTML=items.map(({x,i,xl,b})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
+  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
+ $('msideList').querySelectorAll('.mi').forEach(d=>d.onclick=e=>{if(e.target.closest('.star'))return;openSaved(store.get()[+d.dataset.i]);});
+ $('msideList').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});
  $('list').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});}
 // Час аукціону за Києвом: «вт 17.11, 17:00»
 function aucKyiv(d){const f=o=>new Intl.DateTimeFormat('uk-UA',{timeZone:'Europe/Kyiv',...o}).format(d);return `${f({weekday:'short'})} ${f({day:'2-digit',month:'2-digit'})}, ${f({hour:'2-digit',minute:'2-digit',hour12:false})}`;}
