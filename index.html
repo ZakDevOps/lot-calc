@@ -102,6 +102,10 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 .star{background:none;border:0;cursor:pointer;font-size:17px;color:#f5b301;padding:0 2px;line-height:1}.star:not(.on){color:var(--mut)}
 #list tr.fav td{background:rgba(245,179,1,.07)}#list .when{font-size:12.5px;margin:2px 0}
 .np{background:none;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-size:10.5px;font-weight:700;padding:0 7px;cursor:pointer;margin-left:2px}.np:hover{color:var(--bad);border-color:var(--bad)}
+.cfx{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:12.5px}.cfx.okb{border:1px solid rgba(5,150,105,.35)}.cfx.warnb{border:1px solid rgba(217,119,6,.45)}
+.cfxg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:8px}.cfxg label{font-size:11px}.ck{display:flex;flex-direction:row;align-items:center;gap:5px;color:var(--fg);font-size:12px;font-weight:600}.ck input{width:auto}
+.score{display:inline-flex;align-items:baseline;gap:3px;font-size:11.5px;font-weight:800;padding:1px 7px;border-radius:999px;cursor:help;vertical-align:middle}.score small{font-weight:600;font-size:9.5px;opacity:.75}
+.score.hi{background:rgba(5,150,105,.16);color:var(--ok)}.score.mid{background:rgba(217,119,6,.16);color:#d97706}.score.lo{background:rgba(225,29,72,.14);color:var(--bad)}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
@@ -161,6 +165,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <div class="inl"><span class="chips" id="keyChips"></span><span class="chips" id="startChips"></span></div>
    <div class="k">Позначки</div>
    <div class="chips" id="flagChips"></div>
+   <div class="k">Carfax</div>
+   <div id="cfxBox"></div>
   </div>
  </div>
 
@@ -179,7 +185,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <div class="wrap"><table id="sharedList"></table></div>
   </div>
   <div class="pane" id="p-mine">
-   <div class="row" style="justify-content:flex-end;margin-bottom:6px"><span class="mut" id="shareMsg" style="flex:1"></span><button class="chip" id="share">🔗 Поділитися списком</button></div>
+   <div class="row" style="justify-content:flex-end;margin-bottom:6px"><span class="chips" id="sortChips"></span><span class="mut" id="shareMsg" style="flex:1"></span><button class="chip" id="share">🔗 Поділитися списком</button></div>
    <div class="wrap"><table id="list"></table></div>
    <div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою «Додати» біля ставки.</div>
    <div id="picks" style="margin-top:14px"></div>
@@ -317,7 +323,7 @@ function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  if(m=u.match(/lot\/\d+\/[^?#]*?-([a-z]{2})-[a-z-]+\/?(?:[?#]|$)/i))if(STATES.includes(m[1].toUpperCase()))r.state=m[1].toUpperCase();
  return r;}
 const ver=vin=>({E:'AWD',D:'RWD',T:'Performance'})[(vin||'')[7]]||'?';
-function onUrl(){const r=parse($('url').value);if(!r){curLot=null;$('info').innerHTML='';$('links').innerHTML='';run();return;}
+function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;$('info').innerHTML='';$('links').innerHTML='';run();return;}
  if(r.auc)$('auc').value=r.auc;
  if(r.state){$('state').value=r.state;ship=NEAR.has(r.state)?'near':'far';}
  if(r.vin){const v=(r.vin||'')[7];if('EDT'.includes(v))fDrv=v;}
@@ -488,7 +494,7 @@ function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto US
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
  const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
- renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderList();renderNew();renderShared();markAdd();paint();}
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderCfx();renderList();renderNew();renderShared();markAdd();paint();}
 // Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
 function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
  Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
@@ -504,10 +510,10 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  // Улюблені (★) зверху, далі — за часом аукціону: найближчі першими, минулі й невідомі в кінці
  const now=Date.now(),tk=xl=>{const t=closeTime(xl?.close)?.getTime();return t&&t>=now?t:t?1e15+(1e14-(now-t)):2e15;};
  const items=L.map((x,i)=>{const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;return {x,i,xl,t:tk(xl),b:x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[],state:x.state,loc:xl?.loc}))};})
-  .sort((p,q)=>(!!q.x.fav-!!p.x.fav)||(p.t-q.t));
- const rows=items.map(({x,i,xl,b})=>{
+  .map(o=>({...o,sc:lotScore(o.x,o.xl)})).sort((p,q)=>(!!q.x.fav-!!p.x.fav)||(sortBy==='score'?(q.sc.total-p.sc.total):(p.t-q.t)));
+ const rows=items.map(({x,i,xl,b,sc})=>{
   const ct=closeTime(xl?.close),when=ct?(ct<new Date()?'<span class="mut">аукціон минув</span>':`🕒 <b>${aucKyiv(ct)}</b>`):'';
-  const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
+  const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a> ${scoreBadge(sc)}${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
   const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
   const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
   return `<tr class="${i===act?'act':''}${x.fav?' fav':''}"><td>${u}${when?`<div class="when">${when}</div>`:''}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
@@ -520,8 +526,8 @@ function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.
  $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});
  $('list').querySelectorAll('.open').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(store.get()[+a.dataset.i]);});
  $('msideN').textContent=`(${L.length})`;
- $('msideList').innerHTML=items.map(({x,i,xl,b})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
-  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
+ $('msideList').innerHTML=items.map(({x,i,xl,b,sc})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
+  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${scoreBadge(sc)} ${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
  $('msideList').querySelectorAll('.mi').forEach(d=>d.onclick=e=>{if(e.target.closest('.star'))return;openSaved(store.get()[+d.dataset.i]);});
  $('msideList').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});
  $('list').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});}
@@ -587,6 +593,87 @@ function renderShared(){if(!SHARED)return;const L=SHARED.lots;$('sharedTab').hid
  $('sharedList').querySelectorAll('.sopen').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(L[+a.dataset.i]);});}
 $('copyShared').onclick=()=>{if(!SHARED)return;const L=store.get(),ids=new Set(L.map(x=>String(x.lot||'').replace(/^[01]-/,'')));let n=0;for(const x of SHARED.lots){const id=String(x.lot||'').replace(/^[01]-/,'');if(ids.has(id))continue;ids.add(id);
  L.push({...x,flags:x.flags||[],extras:exOf(x),stop:['cert','parts'].includes(x.doc)});n++;}store.set(L);$('copyShared').textContent=n?`✓ Додано ${n}`:'✓ Усі вже є';run();};
+// ---- Carfax: дані по лоту (localStorage 'cfx') + сам PDF (IndexedDB) ----
+const cfx={all(){try{return JSON.parse(localStorage.getItem('cfx')||'{}')}catch(e){return {}}},
+ get(id){return this.all()[id]||null},
+ set(id,v){const a=this.all();if(v)a[id]=v;else delete a[id];try{localStorage.setItem('cfx',JSON.stringify(a))}catch(e){}}};
+const idb=(()=>{let p;const db=()=>p||(p=new Promise((ok,no)=>{const r=indexedDB.open('lotcalc',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);}));
+ const tx=(mode,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('files',mode),q=fn(t.objectStore('files'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error);}));
+ return {put:(k,v)=>tx('readwrite',s=>s.put(v,k)),get:k=>tx('readonly',s=>s.get(k)),del:k=>tx('readwrite',s=>s.delete(k))};})();
+const curId=()=>parse($('url').value)?.lot||null;
+const USE={personal:'особисте',rental:'оренда / флот',commercial:'комерційне / таксі',unknown:'невідомо'};
+let cfxEdit=false;
+function renderCfx(){const el=$('cfxBox');if(!el)return;const id=curId();
+ if(!id){el.innerHTML='<span class="mut">Відкрийте лот, щоб додати Carfax.</span>';return;}
+ const d=cfx.get(id);
+ if(d&&!cfxEdit){const bad=(d.acc>1)||d.struct||d.airbag||d.odoIssue||d.use==='rental'||d.use==='commercial';
+  el.innerHTML=`<div class="cfx ${bad?'warnb':'okb'}"><b>${d.acc>1?`⚠️ ДТП: ${d.acc} (є попередні)`:d.acc===1?'✅ ДТП: 1 (лише поточне)':'✅ ДТП не зафіксовано'}</b> · власників: ${d.owners??'?'} · ${USE[d.use||'unknown']}${d.struct?' · <span class="bad">структурні пошкодження</span>':''}${d.airbag?' · <span class="bad">спрацювали подушки</span>':''}${d.odoIssue?' · <span class="bad">проблема з пробігом</span>':''}${d.lastOdo?` · пробіг ${Math.round(d.lastOdo*1.609).toLocaleString('uk-UA')} км`:''}${d.service!=null?` · сервісних записів: ${d.service}`:''}${d.notes?`<div class="mut">${d.notes}</div>`:''}
+   <div class="row" style="margin-top:6px">${d.file?'<button class="chip" id="cfxOpen">📄 Відкрити PDF</button>':''}<button class="chip" id="cfxEditB">✏️ Редагувати</button><button class="chip" id="cfxDel">🗑 Видалити</button></div></div>`;
+  if($('cfxOpen'))$('cfxOpen').onclick=async()=>{const b=await idb.get('cfx-'+id);if(b)window.open(URL.createObjectURL(b),'_blank');};
+  $('cfxEditB').onclick=()=>{cfxEdit=true;renderCfx();};
+  $('cfxDel').onclick=()=>{if(!confirm('Видалити Carfax для цього лота?'))return;cfx.set(id,null);idb.del('cfx-'+id);run();};return;}
+ // Без Carfax — компактно: лише кнопки; форма відкривається після завантаження або «Ввести вручну»
+ if(!d&&!cfxEdit){el.innerHTML=`<div class="row"><label class="chip" style="cursor:pointer">📄 Завантажити Carfax (PDF)<input type="file" id="cfxQuick" accept="application/pdf,.pdf" hidden></label><button class="chip" id="cfxManual">✏️ Ввести вручну</button><span class="mut">Carfax ще не додано</span></div>`;
+  $('cfxManual').onclick=()=>{cfxEdit=true;renderCfx();};
+  $('cfxQuick').onchange=e=>{const f=e.target.files[0];if(!f)return;cfxEdit=true;renderCfx();const inp=$('cfxFile'),dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;inp.dispatchEvent(new Event('change'));};return;}
+ const v=d||{acc:'',owners:'',use:'unknown',service:'',lastOdo:''};
+ el.innerHTML=`<div class="cfx"><div class="row"><label class="chip" style="cursor:pointer">📄 Завантажити Carfax (PDF)<input type="file" id="cfxFile" accept="application/pdf,.pdf" hidden></label><span class="mut" id="cfxMsg">${d?'':'Або заповніть вручну.'}</span></div>
+  <div class="cfxg"><label>ДТП / пошкоджень<input id="cfAcc" type="number" min="0" value="${v.acc??''}"></label><label>Власників<input id="cfOwn" type="number" min="0" value="${v.owners??''}"></label>
+  <label>Використання<select id="cfUse">${Object.entries(USE).map(([k,t])=>`<option value="${k}"${v.use===k?' selected':''}>${t}</option>`).join('')}</select></label>
+  <label>Останній пробіг, миль<input id="cfOdo" type="number" value="${v.lastOdo??''}"></label><label>Сервісних записів<input id="cfSrv" type="number" min="0" value="${v.service??''}"></label></div>
+  <div class="row" style="margin:6px 0"><label class="ck"><input type="checkbox" id="cfStr"${v.struct?' checked':''}> структурні пошкодження</label><label class="ck"><input type="checkbox" id="cfAir"${v.airbag?' checked':''}> спрацювали подушки</label><label class="ck"><input type="checkbox" id="cfOdoI"${v.odoIssue?' checked':''}> проблема з пробігом</label></div>
+  <input id="cfNotes" placeholder="Нотатки (напр. «ДТП 2026-08, перед, легке»)" value="${(v.notes||'').replace(/"/g,'&quot;')}">
+  <div class="row" style="margin-top:6px"><button class="btn" id="cfSave">Зберегти Carfax</button><button class="chip" id="cfCancel">Скасувати</button></div></div>`;
+ $('cfxFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('cfxMsg').textContent='Читаю PDF…';
+  try{await idb.put('cfx-'+id,f);const t=await pdfText(f),p=parseCarfax(t);
+   if(p.acc!=null)$('cfAcc').value=p.acc;if(p.owners!=null)$('cfOwn').value=p.owners;if(p.use)$('cfUse').value=p.use;if(p.lastOdo)$('cfOdo').value=p.lastOdo;if(p.service!=null)$('cfSrv').value=p.service;
+   $('cfStr').checked=!!p.struct;$('cfAir').checked=!!p.airbag;$('cfOdoI').checked=!!p.odoIssue;el.dataset.file='1';
+   $('cfxMsg').textContent=`✅ Знайдено: ${Object.keys(p).length} полів. Перевірте й натисніть «Зберегти».`;}
+  catch(err){el.dataset.file='1';$('cfxMsg').textContent='Не вдалося прочитати текст PDF — файл збережено, заповніть поля вручну.';}};
+ $('cfSave').onclick=()=>{const n=x=>x===''?null:+x;cfx.set(id,{acc:n($('cfAcc').value)??0,owners:n($('cfOwn').value),use:$('cfUse').value,lastOdo:n($('cfOdo').value),service:n($('cfSrv').value),
+  struct:$('cfStr').checked,airbag:$('cfAir').checked,odoIssue:$('cfOdoI').checked,notes:$('cfNotes').value.trim(),file:!!(d&&d.file)||el.dataset.file==='1',at:new Date().toISOString().slice(0,10)});
+  delete el.dataset.file;cfxEdit=false;run();};
+ if($('cfCancel'))$('cfCancel').onclick=()=>{cfxEdit=false;renderCfx();};}
+// Текст PDF через pdf.js (вантажиться лише коли потрібен)
+async function pdfText(file){if(!window.pdfjsLib){await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+ const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let out='';
+ for(let i=1;i<=doc.numPages;i++){const c=await (await doc.getPage(i)).getTextContent();out+=c.items.map(x=>x.str).join(' ')+'\n';}return out.replace(/\s+/g,' ');}
+// Розбір тексту Carfax: формулювання англійські, як у звіті
+function parseCarfax(t){const r={},num=s=>+String(s).replace(/,/g,'');let m;
+ if(/no (?:accidents?|damage)(?: or damage)? reported/i.test(t))r.acc=0;
+ else if(m=t.match(/(\d+)\s+(?:accidents?|damage(?: reports?)?|accident\/damage reports?)\s+reported/i))r.acc=+m[1];
+ else if(/accident reported|damage reported/i.test(t))r.acc=1;
+ if(m=t.match(/(\d+)\s*-\s*Owner/i)||t.match(/(\d+)\s+(?:Previous\s+)?owners?\b/i))r.owners=+m[1];
+ if(/structural damage/i.test(t)&&!/no structural damage/i.test(t))r.struct=true;
+ if(/airbag[s]? (?:deployed|deployment)/i.test(t)&&!/no airbag/i.test(t))r.airbag=true;
+ if(/rental|fleet vehicle/i.test(t))r.use='rental';else if(/commercial|taxi|livery|ride[- ]share/i.test(t))r.use='commercial';else if(/personal (?:vehicle|lease)/i.test(t))r.use='personal';
+ if(m=t.match(/(\d+)\s+Service history records?/i))r.service=+m[1];
+ if(m=t.match(/([\d,]{2,})\s+Last reported odometer/i)||t.match(/Last reported odometer reading:?\s*([\d,]{2,})/i))r.lastOdo=num(m[1]);
+ if(/odometer (?:rollback|problem|discrepancy|inconsistency)|not actual mileage/i.test(t))r.odoIssue=true;
+ return r;}
+
+// ---- Рейтинг лота 0–100 ----
+function lotScore(x,xl){const P=[];const add=(k,v,max,note)=>P.push([k,Math.round(v),max,note||'']);
+ if(x.stop)return {total:0,parts:[['Заборонено ввозити / не реєструється',0,100]]};
+ const b=maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:x.extras||[],state:x.state,loc:xl?.loc}));
+ // Ціна: наша макс. ставка проти медіани схожих продажів Premium AWD
+ const S=window.SOLD,C=S?.cols||[],rows=(S?.rows||[]).map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]]))).filter(r=>(r.vin||'')[5]==='D'&&(r.vin||'')[7]==='E'&&!notPrem.has(r.lot));
+ const g=xl?dmgGroup(xl.dmg):null,same=rows.filter(r=>dmgGroup(r.dmg)===g),pool=same.length>=5?same:rows,m=pool.length?med(pool.map(r=>r.bid)):null;
+ add('Запас ціни',m?Math.max(0,Math.min(1,(b/m-0.75)/0.35))*25:12,25,m?`макс. ставка ${fmt(b)} проти медіани ${fmt(m)}`:'немає даних');
+ const c=cfx.get(String(x.lot||'').replace(/^[01]-/,''));const km=xl?.odo?xl.odo*1.609:(c?.lastOdo?c.lastOdo*1.609:null);
+ add('Пробіг',km==null?6:km<=5000?15:km<=15000?12:km<=30000?9:km<=50000?5:2,15,km==null?'невідомо':Math.round(km/1000)+' тис. км');
+ add('Стан',(x.start==='run'?10:x.start==='start'?5:x.start==='dead'?0:4)+(x.key==='no'?0:5),15,`${x.start==='run'?'їде':x.start==='start'?'заводиться':x.start==='dead'?'не заводиться':'стан ?'}, ${x.key==='no'?'без ключа':'ключ є'}`);
+ const rp=x.repair||0;add('Ремонт',rp<=1500?10:rp<=3000?8:rp<=5000?5:rp<=7000?3:1,10,fmt(rp));
+ const st=sellerType(xl?.seller);add('Продавець і документ',(st==='ins'?5:st==='dealer'?1:3)+(x.doc==='bos'||x.doc==='unknown'?2:5),10,`${st==='ins'?'страхова':st==='dealer'?'дилер':'інший'}, ${x.doc||'—'}`);
+ if(!c)add('Carfax',12,25,'немає Carfax — нейтральна оцінка');
+ else{// Одне ДТП — те, через яке авто на аукціоні; штрафуємо лише попередні
+  let v=25;v-=c.acc>=3?12:c.acc===2?6:0;if(c.struct)v-=10;if(c.airbag)v-=8;if(c.use==='rental'||c.use==='commercial')v-=4;if(c.odoIssue)v-=10;if((c.owners||0)>1)v-=2;
+  add('Carfax',Math.max(0,v),25,`ДТП ${c.acc||0}${c.acc===1?' (поточне)':c.acc>1?' (є попередні)':''}${c.struct?', структурні':''}${c.airbag?', подушки':''}${c.use&&c.use!=='personal'&&c.use!=='unknown'?', '+USE[c.use]:''}`);}
+ return {total:P.reduce((s,p)=>s+p[1],0),parts:P,cfx:!!c};}
+const scoreBadge=s=>`<span class="score ${s.total>=70?'hi':s.total>=50?'mid':'lo'}" title="${s.parts.map(p=>`${p[0]}: ${p[1]}/${p[2]} — ${p[3]}`).join('&#10;')}">${s.total}${s.cfx?'':'<small>·без Carfax</small>'}</span>`;
+let sortBy=(()=>{try{return localStorage.getItem('sortBy')||'time'}catch(e){return 'time'}})();
+
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 // Лот уже в «Моїх лотах»? Шукаємо за номером лота
 const savedIdx=lot=>lot?store.get().findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;
@@ -597,6 +684,7 @@ $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
 $('url').addEventListener('input',onUrl);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
+chips($('sortChips'),[['🕒 За часом','time'],['🏆 За рейтингом','score']],v=>{sortBy=v;try{localStorage.setItem('sortBy',v)}catch(e){}},v=>sortBy===v);
 if(SHARED){renderShared();showTab('shared');}else showTab('mine');
 if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
