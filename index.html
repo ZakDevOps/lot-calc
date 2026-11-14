@@ -381,6 +381,8 @@ function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
  f('Пробіг',km!=null?km.toLocaleString('uk-UA')+' км':(l?'немає даних':'—'),km>50000?'bad':'');
  f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
  f('Комплектація',trim);
+ // Тепловий насос: у Model Y стандартний з 2021; у RZ 450e є за специфікацією, для 300e і 2026 — не підтверджено
+ {const rv=tesla?null:rzVer(l?.name,vin);f('Тепловий насос',tesla?'✅ є (стандарт з 2021)':rv==='450e'?'✅ є (за специфікацією 450e)':'❓ не підтверджено — уточніть',tesla||rv==='450e'?'ok':'');}
  // Оснащення за VIN: у Tesla немає пакетів опцій, версія визначає все
  const eq=!tesla?null:l&&notPrem.has(l.lot)?['Позначено вами: не Premium','bad']:code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
  if(eq)f('Оснащення',eq[0],eq[1]);
