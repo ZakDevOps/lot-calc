@@ -107,6 +107,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 .score{display:inline-flex;align-items:baseline;gap:3px;font-size:11.5px;font-weight:800;padding:1px 7px;border-radius:999px;cursor:help;vertical-align:middle}.score small{font-weight:600;font-size:9.5px;opacity:.75}
 .score.hi{background:rgba(5,150,105,.16);color:var(--ok)}.score.mid{background:rgba(217,119,6,.16);color:#d97706}.score.lo{background:rgba(225,29,72,.14);color:var(--bad)}
 .yr{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--chip);color:var(--mut);vertical-align:middle}.facts .warn{color:#d97706}
+.bmk{background:rgba(79,70,229,.1);border:1px solid rgba(79,70,229,.3);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}.bmk .btn{display:inline-block;margin-top:8px;text-decoration:none;cursor:grab}
 .pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
 .newt td{padding:6px 4px;font-size:12.5px}
 .pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
@@ -192,6 +193,8 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <div id="picks" style="margin-top:14px"></div>
   </div>
   <div class="pane" id="p-set">
+   <div class="bmk" id="bmkBox"><b>➕ Додавати будь-який лот одним кліком</b><div class="mut">Перетягніть кнопку нижче на панель закладок браузера. Потім на сторінці лота на <b>bid.cars, IAAI або Copart</b> натисніть цю закладку — лот відкриється тут з усіма даними (штат, пробіг, пошкодження, документ, ключ, запуск, дата аукціону, фото) і запам'ятається.</div>
+   <a class="btn" id="bmk" href="#" onclick="event.preventDefault();alert('Не натискайте — перетягніть цю кнопку на панель закладок (Cmd+Shift+B показує панель).')">＋ Ставка на лот</a></div>
    <div class="grid">
     <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option></select></label>
     <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="500"></label>
@@ -231,7 +234,21 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 <script src="lots.js?v=202611142236"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
-if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
+if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]&&/images\.bid\.cars/.test(r[14])){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
+
+// Лоти, додані закладкою «＋ Ставка на лот» (bid.cars / IAAI / Copart): зберігаються в браузері й мають пріоритет над знімком
+const EXTRA={get(){try{return JSON.parse(localStorage.getItem('extraLots')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('extraLots',JSON.stringify(v))}catch(e){}}};
+window.__added=null;
+(function(){const L=window.LOTS;if(!L)return;L.photos=L.photos||{};L.notes=L.notes||{};L.firstSeen=L.firstSeen||{};
+ const m=location.hash.match(/#add=(.+)$/);
+ if(m){try{const r=JSON.parse(decodeURIComponent(m[1]));const X=EXTRA.get();X[r.lot]=r;EXTRA.set(X);window.__added=r;}catch(e){}history.replaceState(null,'',location.pathname+location.search);}
+ for(const r of Object.values(EXTRA.get())){
+  const row=[r.lot,r.vin||'',r.name||'Tesla Model Y',r.odo??null,r.loc||null,r.dmg||null,r.doc||null,r.doc||null,r.key||null,r.start||null,r.seller||null,null,null,r.close||null,r.img||null];
+  const i=L.rows.findIndex(x=>x[0]===r.lot);
+  if(i>=0){const o=L.rows[i];row.forEach((v,k)=>{if(v==null||v==='')row[k]=o[k];});L.rows[i]=row;}else{L.rows.push(row);L.firstSeen[r.lot]=L.firstSeen[r.lot]||r.at;}
+  if(r.photos)L.photos[r.lot]=r.photos;
+  L.notes[r.lot]=(r.note?r.note+' · ':'')+`дані з ${r.src} на ${r.at}`;}
+})();
 </script>
 <script>
 // Збори аукціону з калькулятора MZ (ставка → збір), між точками — лінійно
@@ -342,13 +359,15 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
   if(window.LOTS.notes?.[fl.lot])T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">ℹ️ ${window.LOTS.notes[fl.lot]}</span>`);
   else if(!fl.close)T.push(`<span class="tag">аукціон ще не призначено</span>`);
   // Та сама машина (VIN) на іншому аукціоні чи в історії продажів
-  const twins=(window.LOTS?.rows||[]).filter(x=>x[1]===fl.vin&&x[0]!==fl.lot);
+  // Приховані VIN (IAAI/Copart показують ****) не порівнюємо — інакше різні машини виглядають однаковими
+  const fullVin=v=>/^[A-HJ-NPR-Z0-9]{17}$/.test(v||'');
+  const twins=fullVin(fl.vin)?(window.LOTS?.rows||[]).filter(x=>x[1]===fl.vin&&x[0]!==fl.lot):[];
   twins.forEach(x=>T.push(`<span class="tag badt">🔁 Ця машина також на ${x[0][0]==='0'?'IAAI':'Copart'}: лот ${x[0].slice(2)} · ${(x[13]||'').replace(' GMT+2','')}</span>`));
-  const past=(window.SOLD?.rows||[]).filter(x=>x[2]===fl.vin&&x[1]!==fl.lot);
+  const past=fullVin(fl.vin)?(window.SOLD?.rows||[]).filter(x=>x[2]===fl.vin&&x[1]!==fl.lot):[];
   past.forEach(x=>T.push(`<span class="tag">🕘 Раніше на ${x[1][0]==='0'?'IAAI':'Copart'} ${x[0].slice(5).split('-').reverse().join('.')}: ставка ${fmt(x[3])}</span>`));
-  {const si=savedIdx(null,fl.vin),sx=si>=0?store.get()[si]:null;if(sx&&String(sx.lot).replace(/^[01]-/,'')!==fl.lot.slice(2))T.push(`<span class="tag badt">📋 Ця машина вже у «Моїх лотах» як «${sx.name||sx.lot}» (інший аукціон)</span>`);}const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
+  {const si=fullVin(fl.vin)?savedIdx(null,fl.vin):-1,sx=si>=0?store.get()[si]:null;if(sx&&String(sx.lot).replace(/^[01]-/,'')!==fl.lot.slice(2))T.push(`<span class="tag badt">📋 Ця машина вже у «Моїх лотах» як «${sx.name||sx.lot}» (інший аукціон)</span>`);}const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
  else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ В адресі IAAI не номер лота. Вставте <b>Stock #</b> зі сторінки IAAI (напр. 46505799) або посилання bid.cars</span>`);
- else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або попросіть «онови лоти»</span>`);
+ else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або додайте його <a href="#" onclick="event.preventDefault();showTab(\'set\');document.getElementById(\'bmkBox\').scrollIntoView({block:\'center\'})">закладкою «＋ Ставка на лот»</a></span>`);
  $('info').innerHTML=T.join('');
  const L=[];
  if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
@@ -703,10 +722,10 @@ let sortBy='time';try{localStorage.removeItem('sortBy')}catch(e){}
 
 function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
 // Лот уже в «Моїх лотах»? Шукаємо за номером лота
-const vinOfSaved=x=>{const l=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;return l?.vin||((x.url||'').match(/\b(7SA[A-Z0-9]{14})\b/i)||[])[1]?.toUpperCase()||null;};
+const vinOfSaved=x=>{const l=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;if(l?.vin&&!/^[A-HJ-NPR-Z0-9]{17}$/.test(l.vin))return null;return l?.vin||((x.url||'').match(/\b(7SA[A-Z0-9]{14})\b/i)||[])[1]?.toUpperCase()||null;};
 // Лот уже в списку: той самий номер або той самий VIN (машину перевиставили на іншому аукціоні)
 const savedIdx=(lot,vin)=>{const L=store.get();let i=lot?L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;if(i<0&&vin)i=L.findIndex(x=>vinOfSaved(x)===vin);return i;};
-const curVin=()=>{const r=parse($('url').value);return r?(findLot(r)?.vin||r.vin||null):null;};
+const curVin=()=>{const r=parse($('url').value);const v=r?(findLot(r)?.vin||r.vin||null):null;return /^[A-HJ-NPR-Z0-9]{17}$/.test(v||'')?v:null;};
 function markAdd(){const r=parse($('url').value),i=savedIdx(r?.lot,curVin());$('add').textContent=i>=0?'✓ Вже в списку':'＋ Додати';$('add').classList.toggle('done',i>=0);}
 $('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
  if(savedIdx(r.lot,curVin())>=0){showTab('mine');const tr=$('list').querySelector('tr.act');if(tr){tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}return;}
@@ -719,4 +738,8 @@ if(SHARED){renderShared();showTab('shared');}else showTab('mine');
 if(innerWidth<560)$('brd').open=false;
 document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
 run();
+// Закладка: код береться з grab.js
+fetch('grab.js?v='+Date.now()).then(r=>r.text()).then(t=>{$('bmk').href='javascript:'+encodeURIComponent(t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\n\s*/g,''));}).catch(()=>{});
+// Лот, щойно доданий закладкою, — відкриваємо
+if(window.__added){const a=window.__added;$('url').value=`https://bid.cars/ua/lot/${a.lot}/${(a.vin||'').includes('?')?'x':(a.vin||'x')}`;onUrl();}
 </script></body></html>
