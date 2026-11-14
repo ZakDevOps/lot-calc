@@ -231,7 +231,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </main>
 <script src="caucasus.js?v=202611142236"></script>
 <script src="sold.js?v=202611142236"></script>
-<script src="lots.js?v=202611142236"></script>
+<script src="lots.js?v=202611150030"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]&&/images\.bid\.cars/.test(r[14])){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
@@ -371,8 +371,8 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
  $('info').innerHTML=T.join('');
  const L=[];
  if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
- if(r.lot&&r.auc==='IAAI')L.push(['IAAI',`https://www.iaai.com/VehicleDetail/${r.lot}~US`]);
- if(r.lot)L.push(['bid.cars',`https://bid.cars/ua/search/results?search-type=typing&query=${r.vin||r.lot}`]);
+ if(r.lot&&r.auc==='IAAI'){const it=window.LOTS?.iaai?.['0-'+r.lot];L.push(['IAAI',it?`https://www.iaai.com/VehicleDetail/${it}~US`:`https://www.iaai.com/Search?Keyword=${r.lot}`]);}
+ if(r.lot)L.push(['bid.cars',`https://bid.cars/ua/search/results?search-type=typing&query=${r.vin&&!r.vin.includes('?')?r.vin:r.lot}`]);
  if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
  $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
  const lot=findLot(r);curLot=lot;if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
