@@ -316,7 +316,8 @@ function paint(){document.querySelectorAll('.chip').forEach(b=>{if(b._on)b.class
 
 function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  if(m=u.match(/copart\.com\/.*lot\/(\d+)/i)){r.auc='Copart';r.lot=m[1];}
- else if(m=u.match(/iaai\.com\/.*?(\d{6,})/i)){r.auc='IAAI';r.lot=m[1];}
+ // В адресі IAAI — внутрішній ID сторінки, а не Stock # (як на bid.cars), тому лот за ним не знайти
+ else if(m=u.match(/iaai\.com\/.*?(\d{6,})/i)){r.auc='IAAI';r.lot=m[1];r.iaaiItem=true;}
  else if(m=u.match(/bid\.cars\/.*lot\/([01])-(\d+)(?:\/([^?#]+))?/i)){r.auc=m[1]==='1'?'Copart':'IAAI';r.lot=m[2];
   if(m[3]){const p=decodeURIComponent(m[3]).split('-');const v=p.at(-1);if(/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))r.vin=v.toUpperCase();r.title=p.slice(0,-1).join(' ');}}
  else if(m=u.match(/^\d{7,9}$/)){r.lot=m[0];}
@@ -338,7 +339,8 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
  if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
  const fl=findLot(r);
  if(fl){T.push(`<span class="tag">${fl.loc}</span>`);const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
- else if(!r.state)T.push(`<span class="tag">Лота немає в знімку: штат і стан оберіть вручну</span>`);
+ else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ В адресі IAAI не номер лота. Вставте <b>Stock #</b> зі сторінки IAAI (напр. 46505799) або посилання bid.cars</span>`);
+ else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або попросіть «онови лоти»</span>`);
  $('info').innerHTML=T.join('');
  const L=[];
  if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
@@ -347,6 +349,8 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
  if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
  $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
  const lot=findLot(r);curLot=lot;if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
+ // Лота немає в знімку — не тягнемо стан попереднього лота, ставимо «невідомо»
+ else{if(!r.state){$('state').value='';}$('doc').value='unknown';keyS='yes';startS='unknown';flags=new Set();fDmg='all';}
  if(lot||!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
  renderCar(r,lot,null);
  if(r.vin)decodeVin(r.vin).then(v=>{if(parse($('url').value)?.lot===r.lot)renderCar(r,lot,v);});
@@ -359,7 +363,7 @@ function findLot(r){const L=window.LOTS;if(!L)return null;const C=L.cols;
 function docCode(s){s=(s||'').toUpperCase();
  if(/BILL OF SALE/.test(s))return 'bos';if(/DESTRUCTION|JUNK/.test(s))return 'cert';if(/PARTS|NON-REPAIR/.test(s))return 'parts';
  if(/MV-907A/.test(s))return 'mv907';if(/^(CLEAR|ORIGINAL|REBUILD)|CERTIFICATE OF TITLE \(/.test(s))return 'clear';return 'salvage';}
-function applyLot(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
+function applyLot(l){$('auc').value=l.lot[0]==='0'?'IAAI':'Copart';const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
  if(st){$('state').value=st;ship=NEAR.has(st)?'near':'far';}
  $('doc').value=docCode(l.docFull);
  keyS=l.key==='Missing'?'no':'yes';
