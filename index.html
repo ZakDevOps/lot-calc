@@ -704,6 +704,21 @@ function parseCarfax(t){const r={},num=s=>+String(s).replace(/,/g,'');let m;
  if(m=t.match(/(\d+)\s+Service history records?/i))r.service=+m[1];
  if(m=t.match(/([\d,]{2,})\s+Last reported odometer/i)||t.match(/Last reported odometer reading:?\s*([\d,]{2,})/i))r.lastOdo=num(m[1]);
  if(/odometer (?:rollback|problem|discrepancy|inconsistency)|not actual mileage/i.test(t))r.odoIssue=true;
+ // Carfax українською (перекладений звіт)
+ if(/[А-Яа-яІіЇї]{4}/.test(t)){
+  const ev=[...t.matchAll(/Подія\s+(\d+)/g)].map(x=>+x[1]);
+  if(ev.length)r.acc=Math.max(...ev);else if(/(?:ДТП|пошкоджень?)\s*(?:не|не було)\s*(?:зафіксовано|повідомлено)/i.test(t))r.acc=0;
+  else{const n=(t.match(/Повідомлено про (?:ДТП|пошкодження)/g)||[]).length;if(n)r.acc=n;}
+  if(/з одним власником/i.test(t))r.owners=1;else{const w=[...t.matchAll(/Власник\s+(\d+)/g)].map(x=>+x[1]);if(w.length)r.owners=Math.max(...w);}
+  const rep=(re)=>{const m=t.match(re);return m?!/^\s*(?:\S+\s+){0,30}?Не повідомлялося/i.test(m[1]):null;};
+  const st=t.match(/Структурні пошкодження([\s\S]{0,200})/);if(st&&!/Не повідомлялося|не виявлено/i.test(st[1]))r.struct=true;
+  const ab=t.match(/Спрацювання подушок безпеки([\s\S]{0,120})/);if(ab&&!/Не повідомлялося|не повідомлялось/i.test(ab[1]))r.airbag=true;
+  if(/оренд|прокат/i.test(t))r.use='rental';else if(/комерційн|таксі/i.test(t))r.use='commercial';else if(/особист(?:ий|ому|ого) (?:лізинг|транспорт|автомобіл)/i.test(t))r.use='personal';
+  if(m=t.match(/Останнє зафіксоване значення одометра\s*([\d,]{2,})/))r.lastOdo=num(m[1]);
+  else{const od=[...t.matchAll(/\d{2}\/\d{2}\/\d{4}\s+([\d,]{2,})\s/g)].map(x=>num(x[1])).filter(x=>x<500000);if(od.length)r.lastOdo=Math.max(...od);}
+  const sv=(t.match(/(?:Технічне обслуговування|Сервісн\S* (?:центр|запис)|Обслуговування автомобіля)/gi)||[]).length;if(sv)r.service=sv;else if(m=t.match(/Доступно детальних записів:\s*(\d+)/))r.records=+m[1];
+  if(/(?:відкат\S* одометра|непідтверджен\S* пробіг)(?![^.]{0,20}(?:відсутні|не виявлено))/i.test(t)&&!/Ознаки відкату одометра відсутні/i.test(t))r.odoIssue=true;
+ }
  return r;}
 
 // ---- Рейтинг лота 0–100 ----
