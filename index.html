@@ -142,7 +142,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </style></head><body>
 <div class="hero"><div class="hero-in">
 <h1>⚡ Ставка на лот</h1>
-<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи <span id="carrierLbl">Caucasus Auto, доставка до Івано-Франківська</span>.</p>
+<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи <span id="carrierLbl">Любе Авто, доставка до Львова</span>.</p>
 </div></div>
 <main>
 <div class="layout">
@@ -195,20 +195,16 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <div class="pane" id="p-set">
    <div class="bmk" id="bmkBox"><b>➕ Додавати будь-який лот одним кліком</b><div class="mut">Перетягніть кнопку нижче на панель закладок браузера. Потім на сторінці лота на <b>bid.cars, IAAI або Copart</b> натисніть цю закладку — лот відкриється тут з усіма даними (штат, пробіг, пошкодження, документ, ключ, запуск, дата аукціону, фото) і запам'ятається.</div>
    <a class="btn" id="bmk" href="#" onclick="event.preventDefault();alert('Не натискайте — перетягніть цю кнопку на панель закладок (Cmd+Shift+B показує панель).')">＋ Ставка на лот</a></div>
+   <div style="display:none"><select id="carrier"><option value="lube">Любе Авто</option></select><input id="uaDel" type="number" value="0"><input id="broker" type="number" value="0"><input id="svc" type="number" value="0"><input id="near" type="number" value="0"><input id="far" type="number" value="0"></div>
    <div class="grid">
-    <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option><option value="lube">Любе Авто</option></select></label>
-    <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="500"></label>
-    <label>Брокер / комісія, $<input id="broker" type="number" value="500"></label>
-    <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
-    <label>Запас, $<input id="buf" type="number" value="500"></label>
-    <label>Батарея, кВт·год<input id="kwh" type="number" value="79"></label>
-    <label>Ближній штат, $<input id="near" type="number" value="2700"></label>
-    <label>Дальній штат, $<input id="far" type="number" value="3400"></label>
+    <label>Запас на непередбачене, $<input id="buf" type="number" value="500"></label>
+    <label>Батарея, кВт·год (для акцизу)<input id="kwh" type="number" value="79"></label>
     <label>Пенсійний збір<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label>
    </div>
-   <div class="grid" id="lubeBox" style="display:none;margin-top:10px"><div class="mut" style="grid-column:1/-1"><b>Любе Авто — статті з розрахункової відомості</b> (KIA EV6, серпень 2026). 1.1 для відомого майданчика рахується автоматично: тариф Caucasus від майданчика до Клайпеди мінус $1 004 (перевірено на Trenton, NJ: $430 + $1 000 = Caucasus $1 434); поле — для лотів, де майданчик невідомий. Мито (3.1) рахується автоматично: акциз + ПДВ 20%.</div><label>1.1 Транспортування по суші, $<input id="l_land" type="number" value="430"></label><label>1.2 Доставка США → Литва (контейнер), $<input id="l_ocean" type="number" value="1000"></label><label>1.3 Оформлення й пересилання документів, $<input id="l_docs" type="number" value="50"></label><label>1.4 Доплата за небезпечний вантаж (електро), $<input id="l_ev" type="number" value="100"></label><label>2.1 Вигрузка в Литві, $<input id="l_unload" type="number" value="350"></label><label>2.2 Стоянка авто в Литві, $<input id="l_park" type="number" value="25"></label><label>2.3 Погрузка на автовоз у Литві, $<input id="l_load" type="number" value="35"></label><label>2.4 Транспортування Клайпеда → Львів, $<input id="l_kl" type="number" value="750"></label><label>2.5 Митні витрати, $<input id="l_cust" type="number" value="0"></label><label>3.2 Стоянка в зоні митного контролю, $<input id="l_mkp" type="number" value="25"></label><label>3.3 Брокерські послуги, $<input id="l_brk" type="number" value="200"></label><label>3.4 Менеджерські послуги, $<input id="l_mgr" type="number" value="150"></label><label>3.5 Страхування авто, $<input id="l_ins" type="number" value="0"></label><label>Фінансова гарантія, $<input id="l_fin" type="number" value="0"></label></div>
-   <p><label style="flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро (уточнити в MZ)</label></p>
-   <p class="mut">Ближні штати: <span id="nearList"></span>. Пенсійний збір платиться при першій реєстрації в Україні й рахується від митної вартості, як у калькуляторі MZ.</p>
+   <details style="margin-top:10px"><summary><b>Тарифи Любе Авто</b> (змінюйте, якщо отримаєте нову відомість)</summary>
+   <div class="grid" id="lubeBox" style="margin-top:10px"><div class="mut" style="grid-column:1/-1">Ціни з розрахункової відомості Любе Авто по електромобілю (KIA EV6, серпень 2026). Доставка по суші (1.1) для відомого майданчика рахується сама; поле — коли майданчик невідомий. Мито рахується саме від ставки.</div><label>1.1 Транспортування по суші, $<input id="l_land" type="number" value="430"></label><label>1.2 Доставка США → Литва (контейнер), $<input id="l_ocean" type="number" value="1000"></label><label>1.3 Оформлення й пересилання документів, $<input id="l_docs" type="number" value="50"></label><label>1.4 Доплата за небезпечний вантаж (електро), $<input id="l_ev" type="number" value="100"></label><label>2.1 Вигрузка в Литві, $<input id="l_unload" type="number" value="350"></label><label>2.2 Стоянка авто в Литві, $<input id="l_park" type="number" value="25"></label><label>2.3 Погрузка на автовоз у Литві, $<input id="l_load" type="number" value="35"></label><label>2.4 Транспортування Клайпеда → Львів, $<input id="l_kl" type="number" value="750"></label><label>2.5 Митні витрати, $<input id="l_cust" type="number" value="0"></label><label>3.2 Стоянка в зоні митного контролю, $<input id="l_mkp" type="number" value="25"></label><label>3.3 Брокерські послуги, $<input id="l_brk" type="number" value="200"></label><label>3.4 Менеджерські послуги, $<input id="l_mgr" type="number" value="150"></label><label>3.5 Страхування авто, $<input id="l_ins" type="number" value="0"></label><label>Фінансова гарантія, $<input id="l_fin" type="number" value="0"></label></div>
+   </details>
+   <p><label style="flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро</label></p>
   </div>
  </div>
 </div>
@@ -224,7 +220,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
   <details open id="brd"><summary>🧾 З чого складається ціна під ключ</summary><table id="br"></table></details>
   <div class="addrow"><input id="name" placeholder="Назва лота"><button class="btn" id="add">＋ Додати</button></div>
  </div>
- <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує MZ Auto USA.</p>
+ <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує Любе Авто.</p>
 </div>
 </div>
 <div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
@@ -275,7 +271,7 @@ const DOCS=[
  ['bos','Bill of sale','warn',500,'Без титулу. Для експорту потрібне додаткове оформлення: зазвичай +$200–800 і затримка на кілька тижнів. Bid.cars попереджає, що реєстрація в Польщі неможлива; для України уточніть у MZ.'],
  ['cert','Certificate of destruction / Junk','stop',0,'Авто призначене на утилізацію. Легально експортувати й зареєструвати не вийде.'],
  ['parts','Parts only / Non-repairable','stop',0,'Тільки на запчастини. Зареєструвати в Україні не вийде.'],
- ['unknown','Невідомо / інше','warn',0,'Перевірте документ у менеджера MZ до ставки.']];
+ ['unknown','Невідомо / інше','warn',0,'Перевірте документ у менеджера Любе Авто до ставки.']];
 const KEYS=[['🔑 Є ключ','yes'],['Без ключа','no']];
 const STARTS=[['Їде','run'],['Лише заводиться','start'],['Не заводиться','dead']];
 const FLAGS=[['💧 Flood','flood'],['🔥 Burn','burn'],['🌪 Storm','storm'],['🧊 Град','hail'],['🔋 Батарея','battery'],['🎈 Подушки','airbag']];
@@ -296,9 +292,9 @@ const store={get(){try{return JSON.parse(localStorage.getItem('lots')||'[]')}cat
 const fmt=v=>'$'+Math.round(v).toLocaleString('uk-UA');
 
 $('state').innerHTML='<option value="">Штат</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
-$('nearList').textContent=[...NEAR].join(', ');
+
 function chips(el,items,onPick,isOn){el.innerHTML='';items.forEach(([t,v])=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.onclick=()=>{onPick(v);run();};b._v=v;b._on=isOn;el.appendChild(b);});}
-chips($('shipChips'),[['🚚 Ближній','near'],['🚛 Дальній','far']],v=>ship=v,v=>ship===v);
+
 chips($('dmgChips'),DMG.map(([t,v,g])=>[t+' ~'+v/1000+'k',[v,g]]),([v,g])=>{$('repair').value=v;fDmg=g;},([v,g])=>n('repair')===v&&fDmg===g);
 $('doc').innerHTML=DOCS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');
 chips($('keyChips'),KEYS,v=>keyS=v,v=>keyS===v);
@@ -311,16 +307,16 @@ $('doc').addEventListener('change',run);
 // Налаштування зберігаються в браузері: спільні — для всіх, решта — окремо для кожного перевізника
 const LUBEF=["l_land", "l_ocean", "l_docs", "l_ev", "l_unload", "l_park", "l_load", "l_kl", "l_cust", "l_mkp", "l_brk", "l_mgr", "l_ins", "l_fin"];
 const CFG_SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
-const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400},lube:{broker:0,svc:0,uaDel:100,near:0,far:0}};
+const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400},lube:{broker:0,svc:0,uaDel:0,near:0,far:0}};
 const cfg={get(){try{return JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('cfg',JSON.stringify(v))}catch(e){}}};
 const val=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
 const put=(id,v)=>{if(v==null)return;$(id).type==='checkbox'?$(id).checked=v:$(id).value=v;};
 function saveCfg(){const c=cfg.get(),car=$('carrier').value;c.lubeF=Object.fromEntries(LUBEF.map(k=>[k,val(k)]));c.carrier=car;c.shared=Object.fromEntries(CFG_SHARED.map(k=>[k,val(k)]));c[car]=Object.fromEntries(PER.map(k=>[k,val(k)]));cfg.set(c);}
-function loadCarrier(car){const c=cfg.get();if(c.lubeF&&c.lubeV!==2){delete c.lubeF;c.lubeV=2;cfg.set(c);}Object.entries(c.lubeF||{}).forEach(([k,v])=>put(k,v));const L=car==='lube';$('lubeBox').style.display=L?'':'none';['near','far','broker'].forEach(id=>$(id).closest('label').style.display=L?'none':'');const v={...DEF[car],...(c[car]||{})};PER.forEach(k=>put(k,v[k]));}
+function loadCarrier(car){const c=cfg.get();if(c.lubeV!==3){delete c.lubeF;delete c.lube;c.carrier='lube';c.lubeV=3;cfg.set(c);}Object.entries(c.lubeF||{}).forEach(([k,v])=>put(k,v));const v={...DEF[car],...(c[car]||{})};PER.forEach(k=>put(k,v[k]));}
 (function(){const c=cfg.get();
  // Стара стандартна сума 900 → 500 (Клайпеда → Львів + Львів → Франківськ ~$100)
  if(c.caucasus&&+c.caucasus.uaDel===900){c.caucasus.uaDel=500;cfg.set(c);}
- if(c.carrier)$('carrier').value=c.carrier;Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
+ $('carrier').value='lube';Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
 $('carrier').addEventListener('change',()=>{loadCarrier($('carrier').value);saveCfg();run();});
 [...CFG_SHARED,...PER,...LUBEF].forEach(id=>$(id).addEventListener(id==='vat'||id==='pens'?'change':'input',saveCfg));
 chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
@@ -542,7 +538,7 @@ document.addEventListener('keydown',e=>{if(!$('gal').classList.contains('on'))re
  document.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)galStep(dx<0?1:-1);});}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
-function run(){$('carrierLbl').textContent={mz:'MZ Auto USA, доставка до Клевані',lube:'Любе Авто, доставка до Львова',caucasus:'Caucasus Auto, доставка до Івано-Франківська'}[$('carrier').value];const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
+function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
