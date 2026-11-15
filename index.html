@@ -196,13 +196,13 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
    <div class="bmk" id="bmkBox"><b>➕ Додавати будь-який лот одним кліком</b><div class="mut">Перетягніть кнопку нижче на панель закладок браузера. Потім на сторінці лота на <b>bid.cars, IAAI або Copart</b> натисніть цю закладку — лот відкриється тут з усіма даними (штат, пробіг, пошкодження, документ, ключ, запуск, дата аукціону, фото) і запам'ятається.</div>
    <a class="btn" id="bmk" href="#" onclick="event.preventDefault();alert('Не натискайте — перетягніть цю кнопку на панель закладок (Cmd+Shift+B показує панель).')">＋ Ставка на лот</a></div>
    <div class="grid">
-    <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option></select></label>
+    <label>Перевізник<select id="carrier"><option value="caucasus">Caucasus Auto</option><option value="mz">MZ Auto USA</option><option value="lube">Любе Авто</option></select></label>
     <label title="Caucasus: Львів 800, Франківськ/Рівне 900, Київ 1000, Одеса 1200, Харків 1250">Клайпеда → ваше місто, $<input id="uaDel" type="number" value="500"></label>
     <label>Брокер / комісія, $<input id="broker" type="number" value="500"></label>
     <label>Послуги компанії, $<input id="svc" type="number" value="0"></label>
     <label>Запас, $<input id="buf" type="number" value="500"></label>
     <label>Батарея, кВт·год<input id="kwh" type="number" value="79"></label>
-    <label>Ближній штат, $<input id="near" type="number" value="2700"></label>
+    <label title="Любе Авто: лише доставка по суші до порту (Tesla 2023 — $500, Touareg — $780)">Ближній штат, $<input id="near" type="number" value="2700"></label>
     <label>Дальній штат, $<input id="far" type="number" value="3400"></label>
     <label>Пенсійний збір<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label>
    </div>
@@ -309,7 +309,7 @@ const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'
 $('doc').addEventListener('change',run);
 // Налаштування зберігаються в браузері: спільні — для всіх, решта — окремо для кожного перевізника
 const CFG_SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
-const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400}};
+const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400},lube:{broker:0,svc:0,uaDel:100,near:500,far:900}};
 const cfg={get(){try{return JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('cfg',JSON.stringify(v))}catch(e){}}};
 const val=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
 const put=(id,v)=>{if(v==null)return;$(id).type==='checkbox'?$(id).checked=v:$(id).value=v;};
@@ -447,7 +447,15 @@ function calcCau(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),[sh,yard]=cauShi
   ['Клайпеда → Франківськ (порт, брокер, стоянка, доставка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
  if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
  return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
-function calc(p,o){if(o.carrier==='caucasus')return calcCau(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
+// Любе Авто: статті з їхніх розрахункових відомостей (Touareg 2026, Tesla Model Y 2023)
+const LUBE={ocean:1500,docs:50,ev:100,lt:350+30+35,klLviv:800,mkpPark:25,broker:200,manager:150,guarantee:50,insurance:64};
+function calcLube(p,o){const C=window.CAUCASUS,L=LUBE,f=cauFee(o.auc,p),ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100;
+ const rows=[['Ставка',p],['Збір '+o.auc,f],['Доставка по суші до порту ('+(o.ship==='near'?'ближній':'дальній')+' штат)',o.shipCost],['Морем США → Литва (контейнер)',L.ocean],['Документи',L.docs],['Доплата за електро (небезпечний вантаж)',L.ev],
+  ['Литва: вигрузка, стоянка, погрузка',L.lt],['Клайпеда → Львів',L.klLviv],...(o.uaDel?[['Львів → ваше місто',o.uaDel]]:[]),['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],
+  ['Брокер, менеджер, фінгарантія, стоянка МКП, страховка',L.broker+L.manager+L.guarantee+L.mkpPark+L.insurance],['Переказ коштів 1,5% + $100',tr],...(o.broker?[['Комісія компанії',o.broker]]:[]),['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
+ return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
+function calc(p,o){if(o.carrier==='caucasus')return calcCau(p,o);if(o.carrier==='lube')return calcLube(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
  const rows=[['Ставка',p],['Збір '+o.auc,f],['Доставка до Клевані ('+(o.ship==='near'?'ближній':'дальній')+')',o.shipCost],...(o.uaDel?[['Доставка Клевань → ваше місто',o.uaDel]]:[]),
   ['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Брокер',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
  if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,cv*o.pens/100]);
@@ -533,7 +541,7 @@ document.addEventListener('keydown',e=>{if(!$('gal').classList.contains('on'))re
  document.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)galStep(dx<0?1:-1);});}
 $('more').onclick=()=>{showAll=!showAll;run();};
 
-function run(){$('carrierLbl').textContent=$('carrier').value==='mz'?'MZ Auto USA, доставка до Клевані':'Caucasus Auto, доставка до Івано-Франківська';const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
+function run(){$('carrierLbl').textContent={mz:'MZ Auto USA, доставка до Клевані',lube:'Любе Авто, доставка до Львова',caucasus:'Caucasus Auto, доставка до Івано-Франківська'}[$('carrier').value];const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
  $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
  $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
  $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
