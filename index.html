@@ -232,7 +232,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </main>
 <script src="caucasus.js?v=202611142236"></script>
 <script src="sold.js?v=202611142236"></script>
-<script src="lots.js?v=202611150030"></script>
+<script src="lots.js?v=202611151900"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]&&/images\.bid\.cars/.test(r[14])){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
@@ -345,7 +345,7 @@ function parse(u){u=u.trim();if(!u)return null;const r={};let m;
  if(m=u.match(/lot\/\d+\/[^?#]*?-([a-z]{2})-[a-z-]+\/?(?:[?#]|$)/i))if(STATES.includes(m[1].toUpperCase()))r.state=m[1].toUpperCase();
  return r;}
 // Рік за 10-м символом VIN: S — 2025, T — 2026
-const yearOf=vin=>({S:2025,T:2026,R:2024})[(vin||'')[9]]||null;
+const yearOf=vin=>({S:2025,T:2026,R:2024,V:2027})[(vin||'')[9]]||null;
 // Привід/версія за 8-м символом: E — AWD, D — RWD, T/F — Performance (F — у 2025)
 const ver=vin=>({E:'AWD',D:'RWD',T:'Performance',F:'Performance'})[(vin||'')[7]]||'?';
 // «Premium»: у 2026 — 6-й символ D (A — Standard); у 2025 Standard не було, тож будь-який
@@ -368,7 +368,7 @@ function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;
   const past=fullVin(fl.vin)?(window.SOLD?.rows||[]).filter(x=>x[2]===fl.vin&&x[1]!==fl.lot):[];
   past.forEach(x=>T.push(`<span class="tag">🕘 Раніше на ${x[1][0]==='0'?'IAAI':'Copart'} ${x[0].slice(5).split('-').reverse().join('.')}: ставка ${fmt(x[3])}</span>`));
   {const si=fullVin(fl.vin)?savedIdx(null,fl.vin):-1,sx=si>=0?store.get()[si]:null;if(sx&&String(sx.lot).replace(/^[01]-/,'')!==fl.lot.slice(2))T.push(`<span class="tag badt">📋 Ця машина вже у «Моїх лотах» як «${sx.name||sx.lot}» (інший аукціон)</span>`);}const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
- else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ В адресі IAAI не номер лота. Вставте <b>Stock #</b> зі сторінки IAAI (напр. 46505799) або посилання bid.cars</span>`);
+ else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Цього лота IAAI ще немає в знімку, а в адресі IAAI не номер лота, а внутрішній ID. Відкрийте сторінку лота на IAAI і натисніть закладку <b>＋ Ставка на лот</b> — лот додасться з усіма даними. Або вставте <b>Stock #</b> зі сторінки IAAI</span>`);
  else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або додайте його <a href="#" onclick="event.preventDefault();showTab(\'set\');document.getElementById(\'bmkBox\').scrollIntoView({block:\'center\'})">закладкою «＋ Ставка на лот»</a></span>`);
  $('info').innerHTML=T.join('');
  const L=[];
