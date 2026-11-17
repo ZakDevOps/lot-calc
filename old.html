@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ставка на лот</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f46e5'/%3E%3Cstop offset='1' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M36 8 16 36h13l-3 20 22-30H34z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5fb;--card:#fff;--fg:#141826;--mut:#6b7285;--line:#e4e8f2;--chip:#eef1f8;
+ --acc:#4f46e5;--ok:#059669;--bad:#e11d48;--shadow:0 1px 2px rgba(20,24,38,.04),0 8px 24px rgba(20,24,38,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1020;--card:#161a2e;--fg:#eef0f7;--mut:#959bb2;--line:#262b45;--chip:#1f2440;--shadow:none}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.5 Manrope,-apple-system,system-ui,sans-serif}
+.hero{background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);color:#fff;padding:18px 16px 54px}
+.hero-in,main{max-width:1180px;margin:0 auto}
+.hero h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.hero p{margin:2px 0 0;opacity:.85;font-size:13px}
+main{padding:0 16px 40px;margin-top:-40px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.side{position:sticky;top:12px}
+.mside{display:none}
+@media (min-width:1480px){.hero-in,main{max-width:1560px}.layout{grid-template-columns:300px minmax(0,1fr) 360px}.mside{display:block;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}}
+.mi{display:grid;grid-template-columns:56px 1fr;gap:8px;padding:7px;border-radius:10px;cursor:pointer;align-items:center}.mi:hover{background:var(--bg)}.mi.act{background:rgba(79,70,229,.16);box-shadow:inset 3px 0 0 var(--acc)}
+.mi img,.mi .noimg{width:56px;height:42px;object-fit:cover;border-radius:6px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:18px}
+.noimg.big{width:100%;aspect-ratio:4/3;border-radius:8px;background:var(--chip);display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-size:12.5px;color:var(--mut);font-weight:700}
+.mi .t{font-size:12.5px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mi .s{font-size:11px;color:var(--mut)}.mi .b{font-weight:800;font-size:13px}
+.mi .star{font-size:14px;padding:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px;box-shadow:var(--shadow)}
+h2{font-size:15px;margin:0 0 10px;font-weight:800}
+.mut{color:var(--mut);font-size:12.5px}
+label{display:flex;flex-direction:column;font-size:11.5px;color:var(--mut);gap:4px;font-weight:700}
+input,select,button{font:inherit}
+input,select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:100%;outline:none}
+input:focus,select:focus{border-color:var(--acc)}
+.url{display:flex;align-items:center;gap:8px;background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:2px 12px}
+.url:focus-within{border-color:var(--acc)}
+.url input{border:0;background:none;padding:10px 0;font-size:15px}
+.tag{display:inline-flex;background:var(--chip);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;margin:8px 4px 0 0}
+.tag.a{background:rgba(79,70,229,.12);color:var(--acc)}.tag.good{background:rgba(5,150,105,.14);color:var(--ok)}.tag.badt{background:rgba(225,29,72,.14);color:var(--bad)}
+.links{display:inline}
+.links a{margin:8px 10px 0 4px;font-size:12.5px;color:var(--acc);text-decoration:none;font-weight:700;display:inline-block}
+/* Стан лота: рядки «назва — вибір» */
+.rows{display:grid;grid-template-columns:120px 1fr;gap:10px 12px;align-items:center}
+.rows>.k{font-size:12px;color:var(--mut);font-weight:700}
+.inl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.inl select,.inl input{width:auto;min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:999px;padding:5px 11px;cursor:pointer;font-size:12.5px;font-weight:700;transition:all .15s}
+.chip:hover{border-color:var(--acc)}
+.chip.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.chip.good.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.chip.warn.on{background:#d97706;border-color:#d97706;color:#fff}
+.chip.danger.on{background:var(--bad);border-color:var(--bad);color:#fff}
+.money{position:relative;width:110px;flex:none}.money input{width:100%;padding-left:20px}.money:before{content:'$';position:absolute;left:9px;top:8px;color:var(--mut);font-weight:700}
+/* Результат */
+.result{background:linear-gradient(160deg,rgba(79,70,229,.10),rgba(6,182,212,.06)),var(--card);border-color:rgba(79,70,229,.3)}
+.big{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin:2px 0 6px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.cmp{font-size:13px;font-weight:700;margin-bottom:10px}
+.budget{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--line);font-weight:800;font-size:13.5px}.budget .money{width:130px}.budget input{font-weight:800;font-size:15px}
+.odds{display:grid;grid-template-columns:1fr auto;gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:12.5px}
+.odds b{font-size:14px;text-align:right}.odds .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:800;font-size:13px}.odds .d{grid-column:1/-1;color:var(--mut);font-size:11.5px;margin-top:-4px}
+.bar{height:6px;border-radius:9px;background:var(--chip);overflow:hidden;grid-column:1/-1;margin-top:-2px}.bar i{display:block;height:100%;background:var(--acc)}
+.w{border-radius:10px;padding:8px 10px;margin:0 0 6px;font-size:12.5px;line-height:1.4}
+.w b{display:block;font-size:13px}
+.w.stop{background:rgba(225,29,72,.1);border:1px solid rgba(225,29,72,.35)}
+.w.warn{background:rgba(217,119,6,.1);border:1px solid rgba(217,119,6,.35)}
+.w.ok{background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.3);color:var(--fg)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:11.5px;color:var(--mut);font-weight:700}
+td.r,th.r{text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td a{color:inherit;font-weight:700;text-decoration:none}td a:hover{color:var(--acc)}
+details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700;margin:8px 0 4px}
+#brd{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 12px 6px;margin-top:10px}
+#brd summary{color:var(--fg);font-size:13px;margin:6px 0}
+.addrow{display:flex;gap:8px;margin-top:10px}.addrow input{flex:1}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:800;white-space:nowrap}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:15px}
+/* Картка авто */
+.car{display:grid;grid-template-columns:200px 1fr;gap:14px;margin-top:12px;padding:12px;background:var(--bg);border-radius:12px}
+.car img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--chip)}
+.gal{position:fixed;inset:0;z-index:50;background:rgba(5,7,15,.94);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+.gal.on{display:flex}.gal .main{position:relative;flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+.gal .main img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;user-select:none}
+.gal .nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);color:#fff;border:0;width:48px;height:48px;border-radius:50%;font-size:24px;cursor:pointer}
+.gal .nav:hover{background:rgba(255,255,255,.25)}.gal .prev{left:8px}.gal .next{right:8px}
+.gal .close{position:absolute;top:14px;right:16px;background:none;border:0;color:#fff;font-size:28px;cursor:pointer;z-index:2}
+.gal .cnt{color:#cfd3e6;font-size:13px;font-weight:700}
+.gal .thumbs{display:flex;gap:6px;overflow-x:auto;max-width:100%;padding-bottom:4px}
+.gal .thumbs img{height:58px;border-radius:6px;opacity:.5;cursor:pointer;flex:none}.gal .thumbs img.on{opacity:1;outline:2px solid var(--acc)}
+.car img{cursor:zoom-in}.car .ph{position:relative}.car .ph span{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px}
+@media (max-width:560px){.gal .nav{width:38px;height:38px;font-size:18px}.gal .thumbs img{height:44px}}
+.car h3{margin:0;font-size:16px;font-weight:800}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px 12px;margin-top:8px}
+.facts div{font-size:13px;font-weight:700}.facts span{display:block;font-size:10.5px;color:var(--mut);font-weight:700}
+.facts .bad{color:var(--bad)}.facts .ok{color:var(--ok)}
+/* Вкладки */
+#list tr.act td{background:rgba(79,70,229,.14)}#list tr.act td:first-child{box-shadow:inset 3px 0 0 var(--acc);border-radius:8px 0 0 8px}#list tr.act td:last-child{border-radius:0 8px 8px 0}#list tr.act a.open{color:var(--acc)}
+.btn.done{background:var(--ok)}
+@keyframes flash{0%,60%{background:rgba(79,70,229,.45)}100%{background:rgba(79,70,229,.14)}}#list tr.act.flash td{animation:flash 1.2s ease-out}
+.star{background:none;border:0;cursor:pointer;font-size:17px;color:#f5b301;padding:0 2px;line-height:1}.star:not(.on){color:var(--mut)}
+#list tr.fav td{background:rgba(245,179,1,.07)}#list .when{font-size:12.5px;margin:2px 0}
+.np{background:none;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-size:10.5px;font-weight:700;padding:0 7px;cursor:pointer;margin-left:2px}.np:hover{color:var(--bad);border-color:var(--bad)}
+.cfx{background:var(--bg);border-radius:10px;padding:8px 10px;font-size:12.5px}.cfx.okb{border:1px solid rgba(5,150,105,.35)}.cfx.warnb{border:1px solid rgba(217,119,6,.45)}
+.cfxg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px;margin-top:8px}.cfxg label{font-size:11px}.ck{display:flex;flex-direction:row;align-items:center;gap:5px;color:var(--fg);font-size:12px;font-weight:600}.ck input{width:auto}
+.score{display:inline-flex;align-items:baseline;gap:3px;font-size:11.5px;font-weight:800;padding:1px 7px;border-radius:999px;cursor:help;vertical-align:middle}.score small{font-weight:600;font-size:9.5px;opacity:.75}
+.score.hi{background:rgba(5,150,105,.16);color:var(--ok)}.score.mid{background:rgba(217,119,6,.16);color:#d97706}.score.lo{background:rgba(225,29,72,.14);color:var(--bad)}
+.yr{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;background:var(--chip);color:var(--mut);vertical-align:middle}.facts .warn{color:#d97706}
+.bmk{background:rgba(79,70,229,.1);border:1px solid rgba(79,70,229,.3);border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}.bmk .btn{display:inline-block;margin-top:8px;text-decoration:none;cursor:grab}
+.pick{background:var(--bg);border-radius:12px;padding:10px 12px;margin-bottom:12px}.pick .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.newt td{padding:6px 4px;font-size:12.5px}
+.pick ol{margin:0;padding-left:20px;font-size:12.5px}.pick li{margin:2px 0}.pick a{color:var(--fg);font-weight:700;text-decoration:none}.pick a:hover{color:var(--acc)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:-4px -4px 12px}
+.tab{white-space:nowrap;background:none;border:0;padding:8px 12px;font-weight:800;color:var(--mut);cursor:pointer;border-bottom:2px solid transparent;font-size:13.5px}
+.tab.on{color:var(--fg);border-bottom-color:var(--acc)}
+.pane{display:none}.pane.on{display:block}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stat{background:var(--bg);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:17px;font-weight:800}.stat span{font-size:11px;color:var(--mut);font-weight:700}
+.filters{display:flex;flex-wrap:wrap;gap:6px 14px}
+.pill{font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:999px;background:var(--chip);color:var(--mut)}
+.pill.awd{background:rgba(5,150,105,.12);color:var(--ok)}.pill.perf{background:rgba(225,29,72,.12);color:var(--bad)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.wrap{overflow-x:auto}
+.sticky{display:none}
+@media (max-width:900px){.layout{display:flex;flex-direction:column;gap:0}.left{display:contents}.side{position:static;order:3}.tabs-card{order:4}}
+@media (max-width:560px){
+ body{padding-bottom:72px}
+ .hero{padding:14px 16px 46px}.hero h1{font-size:20px}
+ .card{padding:14px}
+ .rows{grid-template-columns:1fr;gap:4px}.rows>.k{margin-top:8px}
+ input,select{font-size:16px}
+ .car{grid-template-columns:1fr}.facts{grid-template-columns:1fr 1fr}
+ .stats{grid-template-columns:repeat(2,1fr)}.hide-s{display:none}
+ .tab{padding:8px 7px;font-size:12.5px}.tabs{overflow-x:auto}
+ .sticky{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10;align-items:center;gap:10px;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.12)}
+ .sticky b{font-size:22px;font-weight:800}.sticky .mut{font-size:11px}
+ .sticky a{font-size:13px;font-weight:800;color:var(--acc);text-decoration:none;white-space:nowrap}
+}
+</style></head><body>
+<div class="hero"><div class="hero-in">
+<h1>⚡ Ставка на лот</h1>
+<p>Максимальна ставка на Copart / IAAI, щоб уміститися в бюджет під ключ. Тарифи <span id="carrierLbl">Любе Авто, доставка до Львова</span>.</p>
+</div></div>
+<main>
+<div class="layout">
+<aside class="mside" id="mside"><div class="card"><h2>📋 Мої лоти <span class="mut" id="msideN"></span></h2><div id="msideList"></div></div></aside>
+<div class="left">
+ <div class="card">
+  <div class="url">🔗<input id="url" placeholder="Посилання Copart / IAAI / bid.cars або номер лота"></div>
+  <div><span id="info"></span><span id="links" class="links"></span></div>
+  <div id="car"></div>
+ </div>
+
+ <div class="card">
+  <h2>Стан лота і витрати</h2>
+  <div class="rows">
+   <div class="k">Аукціон · штат</div>
+   <div class="inl"><select id="auc"><option>Copart</option><option>IAAI</option></select><select id="state"></select><span class="chips" id="shipChips"></span></div>
+   <div class="k">Пошкодження</div>
+   <div class="inl"><span class="chips" id="dmgChips"></span><span class="money"><input id="repair" type="number" value="4000" title="Ремонт, $"></span></div>
+   <div class="k">Документ</div>
+   <div class="inl"><select id="doc"></select></div>
+   <div class="k">Ключ · запуск</div>
+   <div class="inl"><span class="chips" id="keyChips"></span><span class="chips" id="startChips"></span></div>
+   <div class="k">Позначки</div>
+   <div class="chips" id="flagChips"></div>
+   <div class="k">Carfax</div>
+   <div id="cfxBox"></div>
+  </div>
+ </div>
+
+ <div class="card tabs-card">
+  <div class="tabs"><button class="tab" data-t="shared" id="sharedTab" hidden>👤 <span id="sharedName"></span> <span id="sharedN"></span></button><button class="tab" data-t="mine">📋 Мої лоти <span id="mineN"></span></button><button class="tab on" data-t="sold">📊 Схожі продажі</button><button class="tab" data-t="set">⚙️ Налаштування</button></div>
+  <div class="pane on" id="p-sold">
+   <div class="mut" id="soldMeta"></div>
+   <div class="filters" style="margin-top:8px"><span class="chips" id="fDmg"></span><span class="chips" id="fReg"></span><span class="chips" id="fDrv"></span><span class="chips" id="fYear"></span><span class="chips" id="fTrim"></span><span class="chips" id="fPrice"></span></div>
+   <div class="mut" id="priceNote" style="margin-top:6px"></div>
+   <div class="stats" id="stats"></div>
+   <div class="wrap"><table id="sold"></table></div>
+   <button class="chip" id="more" style="margin-top:8px">Показати всі</button>
+  </div>
+  <div class="pane" id="p-shared">
+   <div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="mut" id="sharedMeta"></span><button class="btn" id="copyShared">Скопіювати до моїх лотів</button></div>
+   <div class="wrap"><table id="sharedList"></table></div>
+  </div>
+  <div class="pane" id="p-mine">
+   <div class="row" style="justify-content:flex-end;margin-bottom:6px"><span class="chips" id="sortChips"></span><span class="mut" id="shareMsg" style="flex:1"></span><button class="chip" id="share">🔗 Поділитися списком</button></div>
+   <div class="wrap"><table id="list"></table></div>
+   <div class="mut" id="empty">Поки порожньо. Додайте лот кнопкою «Додати» біля ставки.</div>
+   <div id="picks" style="margin-top:14px"></div>
+  </div>
+  <div class="pane" id="p-set">
+   <div class="bmk" id="bmkBox"><b>➕ Додавати будь-який лот одним кліком</b><div class="mut">Перетягніть кнопку нижче на панель закладок браузера. Потім на сторінці лота на <b>bid.cars, IAAI або Copart</b> натисніть цю закладку — лот відкриється тут з усіма даними (штат, пробіг, пошкодження, документ, ключ, запуск, дата аукціону, фото) і запам'ятається.</div>
+   <a class="btn" id="bmk" href="#" onclick="event.preventDefault();alert('Не натискайте — перетягніть цю кнопку на панель закладок (Cmd+Shift+B показує панель).')">＋ Ставка на лот</a></div>
+   <div style="display:none"><select id="carrier"><option value="lube">Любе Авто</option></select><input id="uaDel" type="number" value="0"><input id="broker" type="number" value="0"><input id="svc" type="number" value="0"><input id="near" type="number" value="0"><input id="far" type="number" value="0"></div>
+   <div class="grid">
+    <label>Запас на непередбачене, $<input id="buf" type="number" value="500"></label>
+    <label>Батарея, кВт·год (для акцизу)<input id="kwh" type="number" value="79"></label>
+    <label>Пенсійний збір<select id="pens"><option value="0">Не враховувати</option><option value="3">3%</option><option value="4">4%</option><option value="5">5%</option></select></label>
+   </div>
+   <details style="margin-top:10px"><summary><b>Тарифи Любе Авто</b> (змінюйте, якщо отримаєте нову відомість)</summary>
+   <div class="grid" id="lubeBox" style="margin-top:10px"><div class="mut" style="grid-column:1/-1">Ціни з розрахункової відомості Любе Авто по електромобілю (KIA EV6, серпень 2026). Доставка по суші (1.1) для відомого майданчика рахується сама; поле — коли майданчик невідомий. Мито рахується саме від ставки.</div><label>1.1 Транспортування по суші, $<input id="l_land" type="number" value="430"></label><label>1.2 Доставка США → Литва (контейнер), $<input id="l_ocean" type="number" value="1000"></label><label>1.3 Оформлення й пересилання документів, $<input id="l_docs" type="number" value="50"></label><label>1.4 Доплата за небезпечний вантаж (електро), $<input id="l_ev" type="number" value="100"></label><label>2.1 Вигрузка в Литві, $<input id="l_unload" type="number" value="350"></label><label>2.2 Стоянка авто в Литві, $<input id="l_park" type="number" value="25"></label><label>2.3 Погрузка на автовоз у Литві, $<input id="l_load" type="number" value="35"></label><label>2.4 Транспортування Клайпеда → Львів, $<input id="l_kl" type="number" value="750"></label><label>2.5 Митні витрати, $<input id="l_cust" type="number" value="0"></label><label>3.2 Стоянка в зоні митного контролю, $<input id="l_mkp" type="number" value="25"></label><label>3.3 Брокерські послуги, $<input id="l_brk" type="number" value="200"></label><label>3.4 Менеджерські послуги, $<input id="l_mgr" type="number" value="150"></label><label>3.5 Страхування авто, $<input id="l_ins" type="number" value="0"></label><label>Фінансова гарантія, $<input id="l_fin" type="number" value="0"></label></div>
+   </details>
+   <p><label style="flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:13.5px"><input id="vat" type="checkbox" checked style="width:auto"> ПДВ 20% на електро</label></p>
+  </div>
+ </div>
+</div>
+
+<div class="side">
+ <div class="card result" id="result">
+  <div class="budget"><span>Бюджет під ключ</span><span class="money"><input id="budget" type="number" value="30000" step="500"></span></div>
+  <div class="mut">Максимальна ставка</div>
+  <div class="big" id="max">—</div>
+  <div class="cmp" id="cmp" hidden></div>
+  <div class="odds" id="odds"></div>
+  <div id="warn"></div>
+  <details open id="brd"><summary>🧾 З чого складається ціна під ключ</summary><table id="br"></table></details>
+  <div class="addrow"><input id="name" placeholder="Назва лота"><button class="btn" id="add">＋ Додати</button></div>
+ </div>
+ <p class="mut" style="text-align:center">Розрахунок орієнтовний. Остаточну вартість підтверджує Любе Авто.</p>
+</div>
+</div>
+<div class="gal" id="gal" onclick="if(event.target===this)galClose()"><button class="close" onclick="galClose()">✕</button><div class="main" id="galMain"><button class="nav prev" onclick="galStep(-1)">‹</button><img id="galImg" alt="Фото лота"><button class="nav next" onclick="galStep(1)">›</button></div><div class="cnt" id="galCnt"></div><div class="thumbs" id="galThumbs"></div></div>
+<div class="sticky"><div><div class="mut">Макс. ставка</div><b id="stickyMax">—</b></div><div class="mut" id="stickyCmp" style="flex:1;text-align:right"></div><a href="#result">Деталі ↓</a></div>
+</main>
+<script src="caucasus.js?v=202611142236"></script>
+<script src="sold.js?v=202611142236"></script>
+<script src="lots.js?v=202611172000"></script>
+<script>
+// Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
+if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]&&/images\.bid\.cars/.test(r[14])){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
+
+// Лоти, додані закладкою «＋ Ставка на лот» (bid.cars / IAAI / Copart): зберігаються в браузері й мають пріоритет над знімком
+const EXTRA={get(){try{return JSON.parse(localStorage.getItem('extraLots')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('extraLots',JSON.stringify(v))}catch(e){}}};
+window.__added=null;
+(function(){const L=window.LOTS;if(!L)return;L.photos=L.photos||{};L.notes=L.notes||{};L.firstSeen=L.firstSeen||{};
+ const m=location.hash.match(/#add=(.+)$/);
+ if(m){try{const r=JSON.parse(decodeURIComponent(m[1]));const X=EXTRA.get();X[r.lot]=r;EXTRA.set(X);window.__added=r;}catch(e){}history.replaceState(null,'',location.pathname+location.search);}
+ for(const r of Object.values(EXTRA.get())){
+  const row=[r.lot,r.vin||'',r.name||'Tesla Model Y',r.odo??null,r.loc||null,r.dmg||null,r.doc||null,r.doc||null,r.key||null,r.start||null,r.seller||null,null,null,r.close||null,r.img||null];
+  const i=L.rows.findIndex(x=>x[0]===r.lot);
+  if(i>=0){const o=L.rows[i];row.forEach((v,k)=>{if(v==null||v==='')row[k]=o[k];});L.rows[i]=row;}else{L.rows.push(row);L.firstSeen[r.lot]=L.firstSeen[r.lot]||r.at;}
+  if(r.photos)L.photos[r.lot]=r.photos;
+  L.notes[r.lot]=(r.note?r.note+' · ':'')+`дані з ${r.src} на ${r.at}`;}
+})();
+</script>
+<script>
+// Збори аукціону з калькулятора MZ (ставка → збір), між точками — лінійно
+const FEES={Copart:[[10000,1168],[14000,1288],[16000,1246],[18000,1372],[20000,1498],[22000,1624],[24000,1750],[26000,1876]],
+ IAAI:[[10000,1246],[14000,1373],[16000,1300],[18000,1430],[20000,1560],[22000,1690],[24000,1820],[26000,1950]]};
+const FREIGHT=1700, EUR=1.15;
+const STATES='AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
+const NEAR=new Set('NJ NY PA CT MA RI NH VT ME DE MD DC VA NC SC GA FL'.split(' '));
+const DMG=[['Легке',2000,'front'],['Перед',4000,'front'],['Зад',4000,'rear'],['Бік',5000,'side'],['Важке',7000,'front']];
+const $=id=>document.getElementById(id), n=id=>+$(id).value||0;
+// Ручні позначки «не Premium»: VIN Tesla не завжди розрізняє комплектацію (той самий код у різних версій)
+const NOT_PREMIUM_DEFAULT=['0-46098062'];
+const notPrem=(()=>{let a=[];try{a=JSON.parse(localStorage.getItem('notPrem')||'null')}catch(e){}return new Set(a||NOT_PREMIUM_DEFAULT);})();
+const saveNP=()=>{try{localStorage.setItem('notPrem',JSON.stringify([...notPrem]))}catch(e){}};
+document.addEventListener('click',e=>{const b=e.target.closest('.np');if(!b)return;e.preventDefault();const id=b.dataset.lot;notPrem.has(id)?notPrem.delete(id):notPrem.add(id);saveNP();run();});
+let ship='near', fDmg='all', fReg='all', fDrv='all', fPrice=2000, fTrim='premium', fYear='auto', showAll=false;
+let keyS='yes', startS='run', flags=new Set(), curLot=null;
+// Документи про продаж: [код, назва, рівень, додаткова витрата $, пояснення]. Суми — орієнтовні оцінки.
+const DOCS=[
+ ['salvage','Salvage / SC / SV / ST / SM / S1 / RB','ok',0,'Звичайний документ для битих авто. Експорт і розмитнення в Україні без проблем.'],
+ ['clear','Clear / Original / Rebuildable','ok',0,'Чистий або відновлюваний титул. Проблем з експортом немає.'],
+ ['mv907','MV-907A (New York)','ok',0,'Нью-Йоркський salvage-сертифікат. Нормально вивозиться, але оформлення може тривати довше.'],
+ ['bos','Bill of sale','warn',500,'Без титулу. Для експорту потрібне додаткове оформлення: зазвичай +$200–800 і затримка на кілька тижнів. Bid.cars попереджає, що реєстрація в Польщі неможлива; для України уточніть у MZ.'],
+ ['cert','Certificate of destruction / Junk','stop',0,'Авто призначене на утилізацію. Легально експортувати й зареєструвати не вийде.'],
+ ['parts','Parts only / Non-repairable','stop',0,'Тільки на запчастини. Зареєструвати в Україні не вийде.'],
+ ['unknown','Невідомо / інше','warn',0,'Перевірте документ у менеджера Любе Авто до ставки.']];
+const KEYS=[['🔑 Є ключ','yes'],['Без ключа','no']];
+const STARTS=[['Їде','run'],['Лише заводиться','start'],['Не заводиться','dead']];
+const FLAGS=[['💧 Flood','flood'],['🔥 Burn','burn'],['🌪 Storm','storm'],['🧊 Град','hail'],['🔋 Батарея','battery'],['🎈 Подушки','airbag']];
+function risk(){const ex=[],w=[];const d=DOCS.find(x=>x[0]===$('doc').value)||DOCS[0];
+ if(d[3])ex.push(['Документ: '+d[1].split(' /')[0],d[3]]);
+ if(d[2]!=='ok')w.push([d[2],'Документ: '+d[1],d[4]]);
+ if(keyS==='no'){ex.push(['Ключ / картка Tesla',300]);w.push(['warn','Немає ключа','Для Tesla це не критично: картку-ключ і прив’язку телефону роблять у сервісі (~$200–400). Але без ключа складніше перевірити стан авто до ставки.']);}
+ if(startS==='unknown')w.push(['warn','Стан запуску невідомий','Аукціон не вказав, чи авто заводиться. Подивіться відео або фото приладової панелі на лоті й оберіть стан вручну.']);
+ if(startS==='start'){ex.push(['Ризик: тільки заводиться',500]);w.push(['warn','Заводиться, але не їде','Може бути проблема з приводом, підвіскою або 12V-системою. Закладено запас $500.']);}
+ if(startS==='dead'){ex.push(['Ризик: не заводиться',1500]);w.push(['warn','Не заводиться','Для електро це може бути батарея або висока напруга, а це найдорожчий ремонт. Закладено запас $1 500, але ризик значно більший. Плюс навантаження й евакуатор можуть коштувати дорожче.']);}
+ if(flags.has('flood')||flags.has('burn')||flags.has('storm'))w.push(['stop','Flood / Burn / Storm','За даними брокерів (Caucasus Auto), електромобілі з такими статусами заборонено ввозити в Україну. Не ставте на такий лот.']);
+ if(flags.has('battery'))w.push(['stop','Пошкоджена батарея','Електро з критично пошкодженою батареєю заборонено ввозити. Навіть якщо пропустять, нова батарея Model Y коштує ~$12–16 тис.']);
+ if(flags.has('hail')){ex.push(['Град: PDR / фарбування',1500]);w.push(['warn','Град','Ремонт вм’ятин від граду (PDR) зазвичай $1–3 тис., залежно від кількості. Закладено $1 500.']);}
+ if(flags.has('airbag')){ex.push(['Подушки безпеки + модуль',2500]);w.push(['warn','Спрацювали подушки','Заміна подушок, ременів і модуля SRS для Model Y зазвичай $2–4 тис. понад кузовний ремонт. Закладено $2 500.']);}
+ if(!w.length)w.push(['ok','Критичних ризиків не видно','Але все одно перевірте фото, Carfax і історію продажів VIN перед ставкою.']);
+ return {ex,w,stop:w.some(x=>x[0]==='stop')};}
+const store={get(){try{return JSON.parse(localStorage.getItem('lots')||'[]')}catch(e){return []}},set(v){try{localStorage.setItem('lots',JSON.stringify(v))}catch(e){}}};
+const fmt=v=>'$'+Math.round(v).toLocaleString('uk-UA');
+
+$('state').innerHTML='<option value="">Штат</option>'+STATES.map(s=>`<option>${s}</option>`).join('');
+
+function chips(el,items,onPick,isOn){el.innerHTML='';items.forEach(([t,v])=>{const b=document.createElement('button');b.className='chip';b.textContent=t;b.onclick=()=>{onPick(v);run();};b._v=v;b._on=isOn;el.appendChild(b);});}
+
+chips($('dmgChips'),DMG.map(([t,v,g])=>[t+' ~'+v/1000+'k',[v,g]]),([v,g])=>{$('repair').value=v;fDmg=g;},([v,g])=>n('repair')===v&&fDmg===g);
+$('doc').innerHTML=DOCS.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join('');
+chips($('keyChips'),KEYS,v=>keyS=v,v=>keyS===v);
+chips($('startChips'),STARTS,v=>startS=v,v=>startS===v);
+chips($('flagChips'),FLAGS,v=>flags.has(v)?flags.delete(v):flags.add(v),v=>flags.has(v));
+// Колір вибраної кнопки: зелений — добре, жовтий — ризик, червоний — погано
+const TONE={yes:'good',no:'danger',run:'good',start:'warn',dead:'danger',flood:'danger',burn:'danger',storm:'danger',battery:'danger',hail:'warn',airbag:'warn'};
+['keyChips','startChips','flagChips'].forEach(id=>[...$(id).children].forEach(b=>{if(TONE[b._v])b.classList.add(TONE[b._v]);}));
+$('doc').addEventListener('change',run);
+// Налаштування зберігаються в браузері: спільні — для всіх, решта — окремо для кожного перевізника
+const LUBEF=["l_land", "l_ocean", "l_docs", "l_ev", "l_unload", "l_park", "l_load", "l_kl", "l_cust", "l_mkp", "l_brk", "l_mgr", "l_ins", "l_fin"];
+const CFG_SHARED=['budget','buf','kwh','pens','vat'],PER=['broker','svc','uaDel','near','far'];
+const DEF={caucasus:{broker:500,svc:0,uaDel:500,near:2700,far:3400},mz:{broker:300,svc:0,uaDel:0,near:2700,far:3400},lube:{broker:0,svc:0,uaDel:0,near:0,far:0}};
+const cfg={get(){try{return JSON.parse(localStorage.getItem('cfg')||'{}')}catch(e){return {}}},set(v){try{localStorage.setItem('cfg',JSON.stringify(v))}catch(e){}}};
+const val=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
+const put=(id,v)=>{if(v==null)return;$(id).type==='checkbox'?$(id).checked=v:$(id).value=v;};
+function saveCfg(){const c=cfg.get(),car=$('carrier').value;c.lubeF=Object.fromEntries(LUBEF.map(k=>[k,val(k)]));c.carrier=car;c.shared=Object.fromEntries(CFG_SHARED.map(k=>[k,val(k)]));c[car]=Object.fromEntries(PER.map(k=>[k,val(k)]));cfg.set(c);}
+function loadCarrier(car){const c=cfg.get();if(c.lubeV!==3){delete c.lubeF;delete c.lube;c.carrier='lube';c.lubeV=3;cfg.set(c);}Object.entries(c.lubeF||{}).forEach(([k,v])=>put(k,v));const v={...DEF[car],...(c[car]||{})};PER.forEach(k=>put(k,v[k]));}
+(function(){const c=cfg.get();
+ // Стара стандартна сума 900 → 500 (Клайпеда → Львів + Львів → Франківськ ~$100)
+ if(c.caucasus&&+c.caucasus.uaDel===900){c.caucasus.uaDel=500;cfg.set(c);}
+ $('carrier').value='lube';Object.entries(c.shared||{}).forEach(([k,v])=>put(k,v));loadCarrier($('carrier').value);})();
+$('carrier').addEventListener('change',()=>{loadCarrier($('carrier').value);saveCfg();run();});
+[...CFG_SHARED,...PER,...LUBEF].forEach(id=>$(id).addEventListener(id==='vat'||id==='pens'?'change':'input',saveCfg));
+chips($('fDmg'),[['Усі пошкодження','all'],['Перед','front'],['Зад','rear'],['Бік','side'],['Інше','other']],v=>fDmg=v,v=>fDmg===v);
+chips($('fReg'),[['Усі штати','all'],['Ближні','near'],['Дальні','far']],v=>fReg=v,v=>fReg===v);
+chips($('fDrv'),[['Усі версії','all'],['AWD','E'],['RWD','D'],['Performance','T']],v=>fDrv=v,v=>fDrv===v);
+// Комплектація за VIN (6-й символ): D — Premium, A — Standard
+chips($('fYear'),[['Рік лота','auto'],['2026',2026],['2025',2025],['Усі роки','all']],v=>fYear=v,v=>fYear===v);
+chips($('fTrim'),[['Тільки Premium','premium'],['Усі комплектації','all']],v=>fTrim=v,v=>fTrim===v);
+// Ціна: показувати продажі поруч із нашою максимальною ставкою
+chips($('fPrice'),[['±$1k від ставки',1000],['±$2k',2000],['Усі ціни',0]],v=>fPrice=v,v=>fPrice===v);
+function paint(){document.querySelectorAll('.chip').forEach(b=>{if(b._on)b.classList.toggle('on',!!b._on(b._v));});}
+
+function parse(u){u=u.trim();if(!u)return null;const r={};let m;
+ if(m=u.match(/copart\.com\/.*lot\/(\d+)/i)){r.auc='Copart';r.lot=m[1];}
+ // В адресі IAAI — внутрішній ID сторінки, а не Stock # (як на bid.cars), тому лот за ним не знайти
+ else if(m=u.match(/iaai\.com\/.*?(\d{6,})/i)){r.auc='IAAI';r.lot=m[1];r.iaaiItem=true;const st=Object.entries(window.LOTS?.iaai||{}).find(([k,v])=>v===m[1]);if(st){r.lot=st[0].slice(2);r.iaaiItem=false;}}
+ else if(m=u.match(/bid\.cars\/.*lot\/([01])-(\d+)(?:\/([^?#]+))?/i)){r.auc=m[1]==='1'?'Copart':'IAAI';r.lot=m[2];
+  if(m[3]){const p=decodeURIComponent(m[3]).split('-');const v=p.at(-1);if(/^[A-HJ-NPR-Z0-9]{17}$/i.test(v))r.vin=v.toUpperCase();r.title=p.slice(0,-1).join(' ');}}
+ else if(m=u.match(/^\d{7,9}$/)){r.lot=m[0];}
+ if(!r.vin&&(m=u.match(/\b([A-HJ-NPR-Z0-9]{17})\b/i)))r.vin=m[1].toUpperCase();
+ // Copart кладе штат і місто в кінець посилання: …-tesla-model-y-ny-albany
+ if(m=u.match(/lot\/\d+\/[^?#]*?-([a-z]{2})-[a-z-]+\/?(?:[?#]|$)/i))if(STATES.includes(m[1].toUpperCase()))r.state=m[1].toUpperCase();
+ return r;}
+// Рік за 10-м символом VIN: S — 2025, T — 2026
+const yearOf=vin=>({S:2025,T:2026,R:2024,V:2027})[(vin||'')[9]]||null;
+// Привід/версія за 8-м символом: E — AWD, D — RWD, T/F — Performance (F — у 2025)
+const ver=vin=>({E:'AWD',D:'RWD',T:'Performance',F:'Performance'})[(vin||'')[7]]||'?';
+// «Premium»: у 2026 — 6-й символ D (A — Standard); у 2025 Standard не було, тож будь-який
+const premiumLike=vin=>yearOf(vin)===2025||(vin||'')[5]==='D';
+function onUrl(){const r=parse($('url').value);cfxEdit=false;if(!r){curLot=null;$('info').innerHTML='';$('links').innerHTML='';run();return;}
+ if(r.auc)$('auc').value=r.auc;
+ if(r.state){$('state').value=r.state;ship=NEAR.has(r.state)?'near':'far';}
+ if(r.vin){const v=(r.vin||'')[7];if('EDT'.includes(v))fDrv=v;}
+ const T=[];if(r.auc)T.push(`<span class="tag a">${r.auc}</span>`);if(r.lot)T.push(`<span class="tag">Лот ${r.lot}</span>`);
+ if(r.vin)T.push(`<span class="tag">${ver(r.vin)}</span><span class="tag">VIN ${r.vin}</span>`);
+ const fl=findLot(r);
+ if(fl){T.push(`<span class="tag">${fl.loc}</span>`);
+  if(window.LOTS.notes?.[fl.lot])T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">ℹ️ ${window.LOTS.notes[fl.lot]}</span>`);
+  else if(!fl.close)T.push(`<span class="tag">аукціон ще не призначено</span>`);
+  // Та сама машина (VIN) на іншому аукціоні чи в історії продажів
+  // Приховані VIN (IAAI/Copart показують ****) не порівнюємо — інакше різні машини виглядають однаковими
+  const fullVin=v=>/^[A-HJ-NPR-Z0-9]{17}$/.test(v||'');
+  const twins=fullVin(fl.vin)?(window.LOTS?.rows||[]).filter(x=>x[1]===fl.vin&&x[0]!==fl.lot):[];
+  twins.forEach(x=>T.push(`<span class="tag badt">🔁 Ця машина також на ${x[0][0]==='0'?'IAAI':'Copart'}: лот ${x[0].slice(2)} · ${(x[13]||'').replace(' GMT+2','')}</span>`));
+  const past=fullVin(fl.vin)?(window.SOLD?.rows||[]).filter(x=>x[2]===fl.vin&&x[1]!==fl.lot):[];
+  past.forEach(x=>T.push(`<span class="tag">🕘 Раніше на ${x[1][0]==='0'?'IAAI':'Copart'} ${x[0].slice(5).split('-').reverse().join('.')}: ставка ${fmt(x[3])}</span>`));
+  {const si=fullVin(fl.vin)?savedIdx(null,fl.vin):-1,sx=si>=0?store.get()[si]:null;if(sx&&String(sx.lot).replace(/^[01]-/,'')!==fl.lot.slice(2))T.push(`<span class="tag badt">📋 Ця машина вже у «Моїх лотах» як «${sx.name||sx.lot}» (інший аукціон)</span>`);}const t=sellerType(fl.seller);if(t)T.push(`<span class="tag ${t==='ins'?'good':t==='dealer'?'badt':''}">${t==='ins'?'🛡 Страхова':t==='dealer'?'🏪 Дилер / не страхова':'Інший продавець'}</span>`);}
+ else if(r.iaaiItem)T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Цього лота IAAI ще немає в знімку, а в адресі IAAI не номер лота, а внутрішній ID. Відкрийте сторінку лота на IAAI і натисніть закладку <b>＋ Ставка на лот</b> — лот додасться з усіма даними. Або вставте <b>Stock #</b> зі сторінки IAAI</span>`);
+ else T.push(`<span class="tag" style="background:rgba(217,119,6,.15);color:#d97706">⚠️ Лота немає в знімку (новий або минулий): штат, документ, ключ і стан оберіть вручну або додайте його <a href="#" onclick="event.preventDefault();showTab(\'set\');document.getElementById(\'bmkBox\').scrollIntoView({block:\'center\'})">закладкою «＋ Ставка на лот»</a></span>`);
+ $('info').innerHTML=T.join('');
+ const L=[];
+ if(r.lot&&r.auc==='Copart')L.push(['Copart',`https://www.copart.com/lot/${r.lot}`]);
+ if(r.lot&&r.auc==='IAAI'){const it=window.LOTS?.iaai?.['0-'+r.lot];L.push(['IAAI',it?`https://www.iaai.com/VehicleDetail/${it}~US`:`https://www.iaai.com/Search?Keyword=${r.lot}`]);}
+ if(r.lot)L.push(['bid.cars',`https://bid.cars/ua/search/results?search-type=typing&query=${r.vin&&!r.vin.includes('?')?r.vin:r.lot}`]);
+ if(r.vin)L.push(['bidfax',`https://bidfax.info/?do=search&subaction=search&story=${r.vin}`]);
+ $('links').innerHTML=L.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('');
+ const lot=findLot(r);curLot=lot;if(lot){applyLot(lot);r.vin=r.vin||lot.vin;}
+ // Лота немає в знімку — не тягнемо стан попереднього лота, ставимо «невідомо»
+ else{if(!r.state){$('state').value='';}$('doc').value='unknown';keyS='yes';startS='unknown';flags=new Set();fDmg='all';}
+ if(lot||!$('name').value)$('name').value=lot?`${lot.loc}, ${lot.dmg}`:(r.title||'');
+ renderCar(r,lot,null);
+ if(r.vin)decodeVin(r.vin).then(v=>{if(parse($('url').value)?.lot===r.lot)renderCar(r,lot,v);});
+ run();}
+
+// Картка авто: знімок поточних лотів (lots.js) + VIN-декодер NHTSA
+function findLot(r){const L=window.LOTS;if(!L)return null;const C=L.cols;
+ const row=L.rows.find(x=>(r.lot&&x[0].endsWith('-'+r.lot))||(r.vin&&x[1]===r.vin));
+ return row?Object.fromEntries(C.map((c,i)=>[c,row[i]])):null;}
+function docCode(s){s=(s||'').toUpperCase();if(/WAIT TITLE|PENDING|TITLE NOT|NO TITLE/.test(s))return 'unknown';
+ if(/BILL OF SALE/.test(s))return 'bos';if(/DESTRUCTION|JUNK/.test(s))return 'cert';if(/PARTS|NON-REPAIR/.test(s))return 'parts';
+ if(/MV-907A/.test(s))return 'mv907';if(/^(CLEAR|ORIGINAL|REBUILD)|CERTIFICATE OF TITLE \(/.test(s))return 'clear';return 'salvage';}
+function applyLot(l){$('auc').value=l.lot[0]==='0'?'IAAI':'Copart';const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
+ if(st){$('state').value=st;ship=NEAR.has(st)?'near':'far';}
+ $('doc').value=docCode(l.docFull);
+ keyS=l.key==='Missing'?'no':'yes';
+ startS=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':'unknown';
+ const d=(l.dmg+' '+l.docFull).toLowerCase();flags=new Set();
+ if(/flood/.test(d))flags.add('flood');if(/burn/.test(d))flags.add('burn');if(/hail/.test(d))flags.add('hail');
+ const g=dmgGroup(l.dmg);fDmg=g;}
+// Тип продавця: страхові зазвичай продають за найкращу ставку, а дилери, лізинг і прокат часто тримають мінімальну ціну
+const sellerType=n=>{n=(n||'').toLowerCase();if(!n)return null;
+ if(/non-insurance|dealer|turo|rent|leas|bank|financ|credit|motors|auto sales/.test(n))return 'dealer';
+ if(/insur|geico|usaa|state farm|progressive|farmers|allstate|mercury|bristol|farm bureau|auto club|acsc|csaa|nationwide|liberty|travelers|esurance|safeco|kemper|erie|amica|hanover|metlife/.test(n))return 'ins';return 'other';};
+const SELLER={ins:['Страхова','ok'],dealer:['Дилер / лізинг / прокат','bad'],other:['Інший продавець','']};
+const vinCache={};
+function decodeVin(v){if(!vinCache[v])vinCache[v]=fetch(`https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValues/${v}?format=json`).then(r=>r.json()).then(j=>j.Results[0]).catch(()=>null);return vinCache[v];}
+const TRIM={DED:'Premium RWD',DEE:'Premium AWD (Long Range)',DET:'Performance AWD',AEE:'Standard AWD',AED:'Standard RWD'};
+function renderCar(r,l,v){if(!r.vin&&!l){$('car').innerHTML='';return;}
+ const vin=r.vin||l?.vin,code=(vin||'').slice(5,8),km=l?.odo?Math.round(l.odo*1.609):null;
+ const year=v?.ModelYear||yearOf(vin)||'',model=v?.Model||'Model Y',y25=yearOf(vin)===2025;
+ const trim=y25?({E:'Long Range AWD',D:'Long Range RWD',F:'Performance'}[(vin||'')[7]]||'—'):v?.Trim||v?.Series||TRIM[code]||(l?.name||'').replace(/^2026 Tesla Model Y,?\s*/i,'')||'—';
+ const F=[];const f=(k,val,cls='')=>{if(val!=null&&val!=='')F.push(`<div class="${cls}"><span>${k}</span>${val}</div>`);};
+ f('Пробіг',km!=null?km.toLocaleString('uk-UA')+' км':(l?'немає даних':'—'),km>50000?'bad':'');
+ f('Привід',v?.EVDriveUnit?(v.EVDriveUnit==='Dual Motor'?'Повний (2 мотори)':'Задній (1 мотор)'):ver(vin));
+ f('Комплектація',trim);
+ f('Тепловий насос','✅ є (стандарт на Model Y з 2021)','ok');
+ // Оснащення за VIN: у Tesla немає пакетів опцій, версія визначає все
+ const eq=y25?['2025: Juniper (вентиляція, задній екран, світлова смуга) або стара Model Y — перевірте фото','warn']:l&&notPrem.has(l.lot)?['Позначено вами: не Premium','bad']:code[0]==='D'?['Вентиляція сидінь, задній екран, скляний дах, підсвітка','ok']:code[0]==='A'?['Standard: без вентиляції й заднього екрана','bad']:null;
+ if(eq)f('Оснащення',eq[0],eq[1]);
+ f('Зарядка AC',(v?.BatteryInfo||'').replace(/Onboard Charger:\s*/,''));
+ f('Завод',v?.PlantCity?`${v.PlantCity[0]+v.PlantCity.slice(1).toLowerCase()}, ${v.PlantCountry==='UNITED STATES (USA)'?'США':v.PlantCountry}`:'');
+ if(l){f('Пошкодження',l.dmg,/flood|burn|rollover/i.test(l.dmg)?'bad':'');
+  f('Документ',l.docFull,['cert','parts'].includes(docCode(l.docFull))?'bad':docCode(l.docFull)==='bos'?'bad':'');
+  f('Ключ',l.key==='Missing'?'Немає':'Присутній',l.key==='Missing'?'bad':'ok');
+  f('Запуск',l.start==='Run / Drive'?'Заводиться і їде':l.start==='Starts'?'Тільки заводиться':'Немає інформації',l.start==='Run / Drive'?'ok':'');
+  f('Локація',l.loc);{const t=sellerType(l.seller);f('Продавець',`${l.seller}${t?` · <span class="${SELLER[t][1]}">${SELLER[t][0]}</span>`:''}`);}
+  f('Оцінка bid.cars',l.estMin>1000?`${fmt(l.estMin)}–${fmt(l.estMax)}`:'');
+  f('Аукціон',(l.close||'').replace(' GMT+2',' (Київ)'));}
+ const img=l?.img?`<div class="ph"><img src="${l.img}" alt="Фото лота" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)" onclick="openGal(this.src)"><span>🔍 Фото</span></div>`:'';
+ $('car').innerHTML=`<div class="car" style="${img?'':'grid-template-columns:1fr'}">${img}<div><h3>${year} Tesla ${model}</h3>
+ <div class="mut">${vin||''}${l?'':' · пробіг і стан лота невідомі: лота немає в знімку '+(window.LOTS?.updated||'')}</div>
+ <div class="facts">${F.join('')}</div>
+ ${l?`<div class="mut" style="margin-top:8px">Дані bid.cars на ${window.LOTS.updated} · стан лота заповнено автоматично</div>`:''}</div></div>`;}
+$('state').addEventListener('change',()=>{const s=$('state').value;if(s){ship=NEAR.has(s)?'near':'far';run();}});
+
+function fee(a,p){const t=FEES[a];if(p<=t[0][0])return t[0][1];
+ for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}
+ const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
+// Caucasus: доставка з конкретного майданчика до Клайпеди + по Україні
+function cauShip(o){const T=window.CAUCASUS.ship[o.auc]||{},st=o.state,city=((o.loc||'').replace(/\s*\([A-Z]{2}\)\s*$/,'')).toUpperCase().replace(/\.\.\.$/,'').trim();
+ if(st&&city){const k=Object.keys(T).find(k=>k===st+'|'+city)||Object.keys(T).find(k=>k.startsWith(st+'|'+city));if(k)return [T[k],k.split('|')[1]];}
+ return [o.ship==='near'?1550:2200,null];}
+function cauFee(a,p){const t=window.CAUCASUS.fees[a];if(p<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
+function calcCau(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),[sh,yard]=cauShip(o),ins=(p+f)*C.insurance,ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100;
+ const rows=[['Ставка',p],['Збір '+o.auc,f],[`Доставка ${yard?yard[0]+yard.slice(1).toLowerCase():(o.ship==='near'?'ближній штат':'дальній штат')} → Клайпеда`,sh],['Страховка вантажу 0,9%',ins],['Експедитор',C.expeditor],
+  ['Клайпеда → Франківськ (порт, брокер, стоянка, доставка)',o.uaDel],['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Комісія компанії',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
+ return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
+// Любе Авто: кожна стаття з їхньої розрахункової відомості — окреме поле
+function calcLube(p,o){const C=window.CAUCASUS,f=cauFee(o.auc,p),ex=o.kwh*C.eur,vat=o.vat?(p+f+C.freightForCustoms+ex)*0.2:0,tr=(p+f)*0.015+100,v=id=>n(id);
+ const [cs,yard]=cauShip(o),land=yard?Math.max(150,Math.round(cs-1004)):v('l_land');
+ const rows=[['Ставка',p],['Збір '+o.auc,f],[yard?`1.1 По суші з ${yard[0]+yard.slice(1).toLowerCase()} (оцінка за майданчиком)`:'1.1 Транспортування по суші',land],['1.2 Доставка США → Литва (контейнер)',v('l_ocean')],['1.3 Оформлення й пересилання документів',v('l_docs')],['1.4 Доплата за небезпечний вантаж (електро)',v('l_ev')],['2.1 Вигрузка в Литві',v('l_unload')],['2.2 Стоянка авто в Литві',v('l_park')],['2.3 Погрузка на автовоз у Литві',v('l_load')],['2.4 Транспортування Клайпеда → Львів',v('l_kl')],['2.5 Митні витрати',v('l_cust')],...(o.uaDel?[['Львів → ваше місто',o.uaDel]]:[]),
+  ['3.1 Мито (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['3.2 Стоянка в зоні митного контролю',v('l_mkp')],['3.3 Брокерські послуги',v('l_brk')],['3.4 Менеджерські послуги',v('l_mgr')],['3.5 Страхування авто',v('l_ins')],['Фінансова гарантія',v('l_fin')],['Переказ коштів 1,5% + $100',tr],...(o.broker?[['Комісія',o.broker]]:[]),...(o.svc?[['Послуги компанії',o.svc]]:[]),['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]].filter(r=>r[1]||/Ставка|Ремонт/.test(r[0]));
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,(p+f+C.freightForCustoms)*o.pens/100]);
+ return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
+function calc(p,o){return calcLube(p,o);const f=fee(o.auc,p),ex=o.kwh*EUR,cv=p+f+FREIGHT,vat=o.vat?(cv+ex)*0.2:0,tr=(p+f)*0.015+100;
+ const rows=[['Ставка',p],['Збір '+o.auc,f],['Доставка до Клевані ('+(o.ship==='near'?'ближній':'дальній')+')',o.shipCost],...(o.uaDel?[['Доставка Клевань → ваше місто',o.uaDel]]:[]),
+  ['Розмитнення (акциз'+(o.vat?' + ПДВ 20%':'')+')',ex+vat],['Переказ коштів 1,5% + $100',tr],['Брокер',o.broker],['Послуги компанії',o.svc],['Ремонт',o.repair],...(o.extras||[]),['Запас',o.buf]];
+ if(o.pens)rows.push([`Пенсійний збір ${o.pens}%`,cv*o.pens/100]);
+ return {rows,total:rows.reduce((s,r)=>s+r[1],0)};}
+function maxBid(o){let lo=0,hi=80000;for(let i=0;i<40;i++){const m=(lo+hi)/2;calc(m,o).total<=o.budget?lo=m:hi=m;}return Math.floor(lo/50)*50;}
+function opts(over){const o={auc:$('auc').value,ship,repair:n('repair'),broker:n('broker'),svc:n('svc'),buf:n('buf'),kwh:n('kwh'),vat:$('vat').checked,budget:n('budget'),pens:n('pens'),extras:risk().ex,carrier:$('carrier').value,uaDel:n('uaDel'),state:$('state').value,loc:curLot?.loc};
+ Object.assign(o,over||{});o.shipCost=o.ship==='near'?n('near'):n('far');return o;}
+
+// Схожі продажі
+const dmgGroup=d=>{d=(d||'').toLowerCase();if(/front/.test(d)&&!/rear/.test(d))return 'front';if(/rear/.test(d)&&!/front/.test(d))return 'rear';if(/side/.test(d))return 'side';return 'other';};
+const stOf=loc=>((loc||'').match(/\(([A-Z]{2})\)/)||[])[1];
+const DMG_UA={front:'перед',rear:'зад',side:'бік',other:'інше'};
+function sold(){const S=window.SOLD;if(!S){$('soldMeta').textContent='Дані про продажі не завантажились.';return [];}
+ const C=S.cols,rows=S.rows.map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]])));
+ const Y=fYear==='auto'?(yearOf(curLot?.vin)||2026):fYear;
+ return rows.filter(r=>(Y==='all'||yearOf(r.vin)===+Y)&&(fDmg==='all'||dmgGroup(r.dmg)===fDmg)&&(fReg==='all'||(NEAR.has(stOf(r.loc))?'near':'far')===fReg)
+  &&(fDrv==='all'||(r.vin||'')[7]===fDrv||(fDrv==='T'&&(r.vin||'')[7]==='F'))&&(fTrim==='all'||(premiumLike(r.vin)&&!notPrem.has(r.lot))));}
+const med=a=>{const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2;};
+function renderSold(maxB){const S=window.SOLD,R=sold();
+ {const Y=fYear==='auto'?(yearOf(curLot?.vin)||2026):fYear;if(S)$('soldMeta').textContent=`Tesla Model Y ${Y==='all'?'2025–2026':Y} з архіву bid.cars · оновлено ${S.updated}${Y===2025||Y==='2025'?' · 2025: серед них можуть бути старі Model Y до рестайлу':''}`;}
+ const b=R.map(r=>r.bid);
+ if(!b.length){window.__simPct=null;$('stickyCmp').textContent='';$('stats').innerHTML='';$('sold').innerHTML='<tr><td class="mut">Немає продажів з такими фільтрами.</td></tr>';$('cmp').textContent='';$('more').style.display='none';return;}
+ const m=med(b),under=maxB>0?b.filter(x=>x<=maxB).length:0;
+ $('stats').innerHTML=[['Продажів',R.length],['Медіана',fmt(m)],['Мін',fmt(Math.min(...b))],['Макс',fmt(Math.max(...b))]].map(([k,v])=>`<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+ const pct=Math.round(under/b.length*100);window.__simPct=maxB>0?pct:null;window.__simMed=m;
+ $('stickyCmp').textContent=maxB>0?`шанс ~${pct}% · медіана ${fmt(m)}`:'';
+ $('cmp').innerHTML=maxB>0?`${pct>=50?'✅':pct>=25?'⚠️':'❌'} ${under} з ${b.length} схожих лотів (${pct}%) продались за цю суму або дешевше · медіана ${fmt(m)}`:'';
+ // Таблиця: тільки продажі в межах ±fPrice від нашої максимальної ставки (шанс рахується по всіх схожих)
+ const inRange=fPrice&&maxB>0?R.filter(r=>Math.abs(r.bid-maxB)<=fPrice):R;
+ $('priceNote').textContent=fPrice&&maxB>0?`Показано ${inRange.length} з ${R.length}: виграні за ${fmt(maxB-fPrice)}–${fmt(maxB+fPrice)}. Шанс виграти рахується по всіх ${R.length}.`:'';
+ const list=[...inRange].sort((a,b)=>b.date.localeCompare(a.date)||b.bid-a.bid),show=showAll?list:list.slice(0,12);
+ $('more').style.display=list.length>12?'':'none';$('more').textContent=showAll?'Згорнути':`Показати всі ${list.length}`;
+ $('sold').innerHTML='<tr><th>Дата</th><th>Лот</th><th class="hide-s">Пробіг</th><th class="r">Ставка</th></tr>'+show.map(r=>{
+  const v=ver(r.vin),cls=v==='AWD'?'awd':v==='Performance'?'perf':'';
+  return `<tr><td class="mut">${r.date.slice(5).split('-').reverse().join('.')}</td><td><a href="https://bid.cars/ua/lot/${r.lot}/${r.vin}" target="_blank" rel="noopener">${r.loc}</a> <span class="yr">${yearOf(r.vin)||''}</span><div class="mut">${r.dmg} · <span class="pill ${cls}">${v}</span>${r.key==='Missing'?' · без ключа':''}${notPrem.has(r.lot)?' · <span class="bad">не Premium</span>':''} · <button class="np" data-lot="${r.lot}" title="Позначити, що це не Premium (прибрати зі статистики)">${notPrem.has(r.lot)?'↺ повернути':'не Premium?'}</button></div></td><td class="hide-s mut">${r.odo?Math.round(r.odo*1.609/1000)+' тис. км':'—'}</td><td class="r"><b class="${maxB>0&&r.bid<=maxB?'ok':''}">${fmt(r.bid)}</b></td></tr>`;}).join('');}
+
+// Шанси: популярність (перегляди), виграти (схожі продажі), що страхова віддасть (історія «Не продано»)
+const POP=[[10,'низька',1.15],[40,'середня',1],[150,'висока',0.85],[1e9,'дуже висока',0.65]];
+function renderOdds(maxB,stop){const el=$('odds');const I=curLot&&window.LOTINFO?window.LOTINFO[curLot.lot]:null;
+ if(stop||!(maxB>0)){el.style.display='none';$('stickyCmp').textContent=stop?'не ставити':'';return;}el.style.display='';
+ const R=[];const views=I?.[0],cur=I?.[1],acv=I?.[2],hist=I?.[4]||[];
+ // Популярність
+ let pf=1,popTxt='—',popD='Немає даних про перегляди: лота немає в знімку або bid.cars не віддав сторінку.';
+ if(views!=null){const p=POP.find(x=>views<=x[0]);pf=p[2];popTxt=p[1];popD=`${views} переглядів на bid.cars (медіана по Model Y 2026 — 17)${cur?` · поточна ставка ${fmt(cur)}`:''}`;}
+ R.push(['🔥 Популярність',popTxt,popD,null]);
+ // Шанс виграти
+ const base=window.__simPct;let win=null;
+ if(base!=null){win=Math.max(2,Math.min(95,Math.round(base*pf)));}
+ R.push(['🏁 Шанс виграти',win!=null?win+'%':'—',base!=null?`${base}% схожих лотів пішли за цю суму або дешевше${pf!==1?`, з поправкою на популярність ×${pf}`:''}`:'Немає схожих продажів для порівняння.',win]);
+ // Шанс, що страхова віддасть
+ const st=sellerType(curLot?.seller);
+ const rej=hist.filter(h=>!h[2]),lastRej=rej.length?rej[rej.length-1][1]:null;
+ let acc=st==='dealer'?55:st==='ins'?90:87;
+ let accD=st==='dealer'?'Продає не страхова (дилер, лізинг або прокат). Такі продавці часто ставлять мінімальну ціну: у знімку всі лоти, які не продали 5–10 разів поспіль, — саме від них.':st==='ins'?'Продає страхова. Страхові зазвичай віддають авто за найкращу ставку, якщо вона не зовсім низька.':'Без історії відмов. За минулий тиждень ~13% продажів Model Y 2026 повернулись на аукціон (продавець не погодив або покупець не заплатив).';
+ if(lastRej){if(maxB<=lastRej){acc=10;}else if(maxB<=lastRej*1.08){acc=45;}else acc=75;
+  accD=`Цей лот уже ${rej.length} раз${rej.length>1&&rej.length<5?'и':rej.length>=5?'ів':''} не продали; остання відхилена ставка ${fmt(lastRej)}. ${maxB<=lastRej?'Ваша ставка не вища, тож продавець, найімовірніше, знову відмовить.':'Ваша ставка вища за відхилену.'}`;}
+ else if(acv&&maxB/acv<0.3){acc=60;accD+=` Ваша ставка — лише ${Math.round(maxB/acv*100)}% від ринкової вартості (ACV ${fmt(acv)}), продавець може не погодити.`;}
+ R.push([st==='dealer'?'🤝 Продавець віддасть':'🤝 Страхова віддасть',acc+'%',accD,acc]);
+ const tot=win!=null?Math.round(win*acc/100):null;
+ el.innerHTML=R.map(([k,v,d,bar])=>`<div>${k}</div><b>${v}</b>${bar!=null?`<div class="bar"><i style="width:${bar}%"></i></div>`:''}<div class="d">${d}</div>`).join('')+
+  (tot!=null?`<div class="tot">Шанс купити за ${fmt(maxB)}</div><b class="tot ${tot>=30?'ok':'bad'}">~${tot}%</b><div class="d">Оцінка за даними знімка, не гарантія.</div>`:'');
+ $('stickyCmp').textContent=tot!=null?`шанс купити ~${tot}%`:'';}
+
+// Якщо фото лота не вантажиться — пробуємо наступні …-2.jpg, …-3.jpg, далі заглушка
+// Заглушка bid.cars «No Image Available» має розмір 640×466 — вважаємо, що фото немає
+function imgCheck(im){if(/images\.bid\.cars/.test(im.src)&&im.naturalWidth===640&&im.naturalHeight===466)imgFallback(im);}
+function imgFallback(im){const m=im.src.match(/^(.*-)(\d+)\.jpg/);const k=m?+m[2]:9;if(m&&k<4){im.src=m[1]+(k+1)+'.jpg';return;}const big=!!im.closest('.ph');im.replaceWith(Object.assign(document.createElement('div'),{className:big?'noimg big':'noimg',textContent:big?'📷 Фото ще немає на bid.cars — спробуйте пізніше або відкрийте лот ↗':'🚗'}));}
+// Галерея фото лота: bid.cars нумерує фото …-1.jpg, …-2.jpg; відсутні підміняє заглушкою 640×466
+const G={urls:[],i:0,key:''};
+function openGal(first){const base=first.replace(/\?.*$/,'').replace(/-\d+\.jpg$/,'-');if(G.key!==base){G.key=base;G.urls=[first];loadGal(base);}G.i=0;$('gal').classList.add('on');showGal();}
+// Номер лота з адреси фото → точна кількість фото зі знімка (без заглушок «No Image Available»)
+function galCount(base){const m=base.match(/mercury\.bid\.cars\/([01]-\d+)\//)||base.match(/images\.bid\.cars\/([01])(\d+)_/);if(!m)return 0;const id=m[2]?m[1]+'-'+m[2]:m[1];return (window.LOTS?.photos||{})[id]||0;}
+function loadGal(base){const N=galCount(base);if(N){G.urls=Array.from({length:N},(_,k)=>base+(k+1)+'.jpg');showGal();return;}
+ let stop=false;const found={};
+ const next=k=>{if(stop||k>30)return;const im=new Image();im.onload=()=>{if(/images\.bid\.cars/.test(base)&&im.naturalWidth===640&&im.naturalHeight===466){stop=true;return;}found[k]=im.src;G.urls=Object.keys(found).sort((a,b)=>a-b).map(x=>found[x]);if(G.key===base)showGal();next(k+1);};im.onerror=()=>{if(k<3)next(k+1);else stop=true;};im.src=base+k+'.jpg';};
+ next(1);}
+function showGal(){const n=G.urls.length;if(!n)return;G.i=(G.i+n)%n;$('galImg').src=G.urls[G.i];$('galCnt').textContent=`${G.i+1} / ${n}`;
+ $('galThumbs').innerHTML=G.urls.map((u,k)=>`<img src="${u}" class="${k===G.i?'on':''}" onclick="G.i=${k};showGal()">`).join('');
+ $('galThumbs').querySelector('.on')?.scrollIntoView({inline:'center',block:'nearest'});}
+const galStep=d=>{G.i+=d;showGal();},galClose=()=>$('gal').classList.remove('on');
+document.addEventListener('keydown',e=>{if(!$('gal').classList.contains('on'))return;if(e.key==='ArrowRight')galStep(1);if(e.key==='ArrowLeft')galStep(-1);if(e.key==='Escape')galClose();});
+{let x0=null;const m=()=>$('galMain');document.addEventListener('touchstart',e=>{if(e.target.closest&&e.target.closest('#galMain'))x0=e.touches[0].clientX;},{passive:true});
+ document.addEventListener('touchend',e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>40)galStep(dx<0?1:-1);});}
+$('more').onclick=()=>{showAll=!showAll;run();};
+
+function run(){const o=opts(),R=risk(),b=R.stop?0:maxBid(o);
+ $('warn').innerHTML=R.w.map(([l,t,s])=>`<div class="w ${l}"><b>${l==='stop'?'⛔':l==='warn'?'⚠️':'✅'} ${t}</b>${s}</div>`).join('');
+ $('max').textContent=R.stop?'не ставити':b>0?fmt(b):'не вміщується';$('max').className='big '+(b>0?'ok':'bad');
+ $('stickyMax').textContent=(R.w.some(x=>x[0]!=='ok')&&!R.stop?'⚠️ ':'')+$('max').textContent;$('stickyMax').className=b>0?'ok':'bad';
+ const c=calc(b,o);$('br').innerHTML=c.rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${fmt(r[1])}</td></tr>`).join('')+`<tr><td><b>Разом під ключ</b></td><td class="r"><b>${fmt(c.total)}</b></td></tr>`;
+ renderSold(b);renderOdds(b,R.stop);syncSaved(R);renderCfx();renderList();renderNew();renderShared();markAdd();paint();}
+// Якщо відкритий лот уже в «Моїх лотах», зберігаємо в нього поточні параметри
+function syncSaved(R){const r=parse($('url').value);if(!r?.lot)return;const L=store.get();const u=$('url').value.trim();const x=L.find(x=>x.url===u)||L.find(x=>x.lot===r.lot||(x.lot||'').endsWith('-'+r.lot));if(!x)return;
+ Object.assign(x,{auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:R.ex,stop:R.stop});store.set(L);}
+function soldFor(x){if(x.price)return {v:x.price,src:'вручну'};const S=window.SOLD;if(!S||!x.lot)return null;
+ const r=S.rows.find(r=>r[1].endsWith('-'+x.lot));if(!r)return null;
+ // Лот знову на аукціоні — значить, ту ставку продавець не прийняв
+ const back=window.LOTS&&window.LOTS.rows.some(l=>l[0].endsWith('-'+x.lot));
+ return back?{v:null,src:`не продано за ${fmt(r[3])}, знову на аукціоні`}:{v:r[3],src:'bid.cars '+r[0].slice(5).split('-').reverse().join('.')};}
+function renderList(){const L=store.get();$('mineN').textContent=L.length?`(${L.length})`:'';$('empty').style.display=L.length?'none':'block';
+ if(!L.length){$('list').innerHTML='';$('msideN').textContent='';$('msideList').innerHTML='<div class="mut">Порожньо. Додайте лот кнопкою «Додати».</div>';return;}
+ // Лот, відкритий зараз у калькуляторі, підсвічуємо
+ const cu=$('url').value.trim(),cr=parse(cu);let act=L.findIndex(x=>x.url&&x.url===cu);if(act<0&&cr?.lot)act=L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===cr.lot);
+ // За часом аукціону (★ — лише позначка): найближчі першими, минулі й невідомі в кінці
+ const now=Date.now(),tk=xl=>{const t=closeTime(xl?.close)?.getTime();return t&&t>=now?t:t?1e15+(1e14-(now-t)):2e15;};
+ const items=L.map((x,i)=>{const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;return {x,i,xl,t:tk(xl),b:x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras||[],state:x.state,loc:xl?.loc}))};})
+  .map(o=>({...o,sc:lotScore(o.x,o.xl)})).sort((p,q)=>sortBy==='score'?(q.sc.total-p.sc.total)||(p.t-q.t):(p.t-q.t));
+ const rows=items.map(({x,i,xl,b,sc})=>{
+  const ct=closeTime(xl?.close),when=ct?(ct<new Date()?'<span class="mut">аукціон минув</span>':`🕒 <b>${aucKyiv(ct)}</b>`):'';
+  const u=`<button class="star${x.fav?' on':''}" data-i="${i}" title="Улюблений">${x.fav?'★':'☆'}</button> <a href="#" class="open" data-i="${i}" title="Відкрити в калькуляторі">${x.name||x.lot||'лот'}</a>${yearOf(xl?.vin)?` <span class="yr">${yearOf(xl.vin)}</span>`:''} ${scoreBadge(sc)}${x.url?` <a href="${x.url}" target="_blank" rel="noopener" class="mut" title="Відкрити на аукціоні">↗</a>`:''}`;
+  const sf=soldFor(x),diff=sf?.v&&b>0?sf.v-b:null;
+  const st=diff!=null?(diff<=0?`<span class="ok">✅ вміщалось</span>`:`<span class="bad">дорожче на ${fmt(diff)}</span>`):'';
+  return `<tr class="${i===act?'act':''}${x.fav?' fav':''}"><td>${u}${when?`<div class="when">${when}</div>`:''}<div class="mut">${x.auc} · ${x.state||'—'} · ${x.ship==='near'?'ближній':'дальній'} · ремонт ${fmt(x.repair)}</div></td>
+   <td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td>
+   <td class="r"><span class="money" style="width:105px;display:inline-block"><input class="price" data-i="${i}" type="number" placeholder="${sf?.v&&!x.price?Math.round(sf.v):'—'}" value="${x.price||''}"></span>
+    <div class="mut">${sf?(x.price?'вручну':sf.src):'ще не продано'}${st?' · '+st:''}</div></td>
+   <td class="r"><button class="x" data-i="${i}" title="Прибрати">✕</button></td></tr>`;}).join('');
+ $('list').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th><th></th></tr>'+rows;
+ $('list').querySelectorAll('.price').forEach(inp=>inp.onchange=()=>{const L=store.get();L[+inp.dataset.i].price=+inp.value||null;store.set(L);renderList();});
+ $('list').querySelectorAll('.x').forEach(b=>b.onclick=()=>{const L=store.get();L.splice(+b.dataset.i,1);store.set(L);renderList();});
+ $('list').querySelectorAll('.open').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(store.get()[+a.dataset.i]);});
+ $('msideN').textContent=`(${L.length})`;
+// Бічна панель — завжди за часом аукціону
+ $('msideList').innerHTML=[...items].sort((p,q)=>p.t-q.t).map(({x,i,xl,b,sc})=>{const ct=closeTime(xl?.close),gone=ct&&ct<new Date();
+  return `<div class="mi${i===act?' act':''}" data-i="${i}">${xl?.img?`<img src="${xl.img}" alt="" loading="lazy" onerror="imgFallback(this)" onload="imgCheck(this)">`:'<div class="noimg">🚗</div>'}<div><div class="t"><button class="star${x.fav?' on':''}" data-i="${i}">${x.fav?'★':'☆'}</button> ${x.name||x.lot}${yearOf(xl?.vin)?` <span class="yr">${yearOf(xl.vin)}</span>`:''}</div><div class="s">${ct?(gone?'аукціон минув':'🕒 '+aucKyiv(ct)):x.auc}</div><div class="b ${b>0?'ok':'bad'}">${scoreBadge(sc)} ${b>0?fmt(b):'—'}${x.price?` <span class="mut" style="font-weight:600">· продано ${fmt(x.price)}</span>`:''}</div></div></div>`;}).join('')||'<div class="mut">Порожньо.</div>';
+ $('msideList').querySelectorAll('.mi').forEach(d=>d.onclick=e=>{if(e.target.closest('.star'))return;openSaved(store.get()[+d.dataset.i]);});
+ $('msideList').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});
+ $('list').querySelectorAll('.star').forEach(b=>b.onclick=()=>{const L=store.get();L[+b.dataset.i].fav=!L[+b.dataset.i].fav;store.set(L);renderList();});}
+// Час аукціону за Києвом: «вт 17.11, 17:00»
+function aucKyiv(d){const f=o=>new Intl.DateTimeFormat('uk-UA',{timeZone:'Europe/Kyiv',...o}).format(d);return `${f({weekday:'short'})} ${f({day:'2-digit',month:'2-digit'})}, ${f({hour:'2-digit',minute:'2-digit',hour12:false})}`;}
+// Відкрити збережений лот у калькуляторі з тими самими параметрами
+function openSaved(x){if(!x)return;$('url').value=x.url||x.lot||'';onUrl();
+ $('auc').value=x.auc;if(x.state)$('state').value=x.state;ship=x.ship;$('repair').value=x.repair;$('name').value=x.name||'';
+ if(x.doc)$('doc').value=x.doc;if(x.key)keyS=x.key;if(x.start)startS=x.start;if(x.flags)flags=new Set(x.flags);
+ run();scrollTo({top:0,behavior:'smooth'});}
+// Нові лоти: Premium AWD зі знімка, яких ще немає в «Моїх лотах» і які не сховані; аукціон ще попереду
+const seen={get(){try{return new Set(JSON.parse(localStorage.getItem('hidden')||'[]'))}catch(e){return new Set()}},add(id){const h=this.get();h.add(id);try{localStorage.setItem('hidden',JSON.stringify([...h]))}catch(e){}}};
+const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+function closeTime(c){const m=(c||'').match(/(\d+) (\w{3}), (\d+):(\d+)/);return m?new Date(Date.UTC(2026,MON[m[2]],+m[1],+m[3]-2,+m[4])):null;}
+function lotToSaved(l){const st=((l.loc||'').match(/\(([A-Z]{2})\)/)||[])[1]||'',doc=docCode(l.docFull),key=l.key==='Missing'?'no':'yes',start=l.start==='Run / Drive'?'run':l.start==='Starts'?'start':'unknown';
+ const ex=[];if(doc==='bos')ex.push(['Документ: Bill of sale',500]);if(key==='no')ex.push(['Ключ / картка Tesla',300]);if(start==='start')ex.push(['Ризик: тільки заводиться',500]);
+ return {url:`https://bid.cars/ua/lot/${l.lot}/${l.vin}`,lot:l.lot.split('-')[1],name:`${l.loc}, ${l.dmg}`,auc:l.lot[0]==='1'?'Copart':'IAAI',state:st,ship:NEAR.has(st)?'near':'far',repair:n('repair'),doc,key,start,flags:[],extras:ex,stop:['cert','parts'].includes(doc)};}
+function renderNew(){const el=$('picks'),L=window.LOTS;if(!L){el.innerHTML='';return;}
+ const haveVin=new Set(store.get().map(vinOfSaved).filter(Boolean)),have=new Set(store.get().map(x=>String(x.lot||'').replace(/^[01]-/,''))),hid=seen.get(),now=new Date();
+ const fs=L.firstSeen||{},since=L.newSince||'';
+ const rows=L.rows.map(r=>Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]))).filter(l=>fs[l.lot]&&fs[l.lot]>=since&&premiumLike(l.vin)&&!notPrem.has(l.lot)&&'ETF'.includes(l.vin[7])&&!have.has(l.lot.split('-')[1])&&!haveVin.has(l.vin)&&!hid.has(l.lot)
+  &&!/flood|burn|rollover/i.test(l.dmg+' '+l.docFull)&&!['cert','parts'].includes(docCode(l.docFull))&&(closeTime(l.close)||now)>=now)
+  .sort((a,b)=>(closeTime(a.close)||0)-(closeTime(b.close)||0));
+ if(!rows.length){el.innerHTML=`<div class="pick"><b>🆕 Нові лоти</b><div class="mut">Нових Premium AWD лотів поки немає. Останній знімок bid.cars — ${L.updated}; попросіть Claude «онови лоти».</div></div>`;return;}
+ el.innerHTML=`<div class="pick"><div class="row2"><b>🆕 Нові лоти (${rows.length})</b><span class="mut">Premium AWD · нові з останнього оновлення</span></div><div class="wrap"><table class="newt">${rows.slice(0,window.__newAll?999:10).map(l=>{const x=lotToSaved(l),b=x.stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair,extras:x.extras,state:x.state,loc:l.loc})),t=sellerType(l.seller),km=l.odo?Math.round(l.odo*1.609/1000)+' тис. км':'—';
+  return `<tr><td class="mut" style="white-space:nowrap">${(l.close||'').replace(/ GMT\+2/,'').replace(/^\w+ /,'')}</td><td><a href="#" class="pk" data-id="${l.lot}">${l.loc}</a> <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a> <span class="yr">${yearOf(l.vin)||''}</span><div class="mut">${l.dmg} · ${km} · <span class="${x.key==='no'?'bad':'ok'}">${x.key==='no'?'без ключа':'ключ'}</span> · ${x.start==='run'?'<span class="ok">їде</span>':x.start==='start'?'заводиться':'стан ?'} · <span class="${t==='ins'?'ok':t==='dealer'?'bad':''}">${t==='ins'?'страхова':t==='dealer'?'дилер':l.seller}</span>${x.doc==='bos'?' · <span class="bad">Bill of sale</span>':''}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r" style="white-space:nowrap"><button class="x addn" data-id="${l.lot}" title="Додати в мої лоти" style="color:var(--acc);font-weight:800">＋</button><button class="np" data-lot="${l.lot}" title="Це не Premium">не Premium</button><button class="x hiden" data-id="${l.lot}" title="Не цікаво">✕</button></td></tr>`;}).join('')}</table></div>${rows.length>10?`<button class="chip" id="newMore" style="margin-top:6px">${window.__newAll?'Згорнути':'Показати всі '+rows.length}</button>`:''}</div>`;
+ if($('newMore'))$('newMore').onclick=()=>{window.__newAll=!window.__newAll;renderNew();};
+ const get=id=>{const r=L.rows.find(x=>x[0]===id);return Object.fromEntries(L.cols.map((c,i)=>[c,r[i]]));};
+ el.querySelectorAll('.pk').forEach(a=>a.onclick=e=>{e.preventDefault();const l=get(a.dataset.id);$('url').value=`https://bid.cars/ua/lot/${l.lot}/${l.vin}`;onUrl();scrollTo({top:0,behavior:'smooth'});});
+ el.querySelectorAll('.addn').forEach(bn=>bn.onclick=()=>{if(savedIdx(bn.dataset.id.split('-')[1])>=0)return;const L2=store.get();L2.push(lotToSaved(get(bn.dataset.id)));store.set(L2);run();});
+ el.querySelectorAll('.hiden').forEach(bn=>bn.onclick=()=>{seen.add(bn.dataset.id);renderNew();});}
+
+// Поділитися списком: лоти пакуються в посилання (#share=…), сервер не потрібен
+const b64e=str=>btoa(unescape(encodeURIComponent(str))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64d=str=>decodeURIComponent(escape(atob(str.replace(/-/g,'+').replace(/_/g,'/'))));
+const PACK=['url','lot','name','auc','state','ship','repair','doc','key','start','flags','price'];
+const exOf=x=>{const ex=[];if(x.doc==='bos')ex.push(['Документ: Bill of sale',500]);if(x.key==='no')ex.push(['Ключ / картка Tesla',300]);if(x.start==='start')ex.push(['Ризик: тільки заводиться',500]);return ex;};
+$('share').onclick=async()=>{const L=store.get();if(!L.length){$('shareMsg').textContent='Список порожній.';return;}
+ let who='';try{who=localStorage.getItem('shareName')||''}catch(e){}
+ who=prompt('Ваше ім’я (його побачить товариш):',who||'Zak');if(!who)return;try{localStorage.setItem('shareName',who)}catch(e){}
+ // Короткий формат: ім'я*лот_ремонт(сотні)_ціна(сотні)_назва — решту сайт бере зі знімка лотів
+ const parts=L.map(x=>{const full=lotFull(x),id=full?full.lot:(x.auc==='IAAI'?'0-':'1-')+String(x.lot||'').replace(/^[01]-/,'');
+  const def=full?`${full.loc}, ${full.dmg}`:'',nm=x.name&&x.name!==def?encodeURIComponent(x.name):'';
+  return [id,Math.round((x.repair||0)/100),x.price?Math.round(x.price/100):'',nm].join('_').replace(/_+$/,'');});
+ const link=location.origin+location.pathname+'#s='+[encodeURIComponent(who),...parts].join('*');
+ try{await navigator.clipboard.writeText(link);$('shareMsg').textContent=`✅ Посилання скопійовано (${L.length} лотів). Надішліть його товаришу.`;}
+ catch(e){$('shareMsg').innerHTML=`Скопіюйте посилання: <input value="${link}" onclick="this.select()" style="width:100%">`;}};
+let SHARED=null;
+function lotFull(x){const id=String(x.lot||'').replace(/^[01]-/,'');return id?findLot({lot:id}):null;}
+// Лот зі знімка → запис списку (штат, документ, ключ, стан беруться з даних bid.cars)
+function fromId(id,repair,price,name){const l=findLot({lot:id.replace(/^[01]-/,'')});
+ if(l){const x=lotToSaved(l);return {...x,repair,price:price||null,name:name||x.name};}
+ return {url:`https://bid.cars/ua/lot/${id}/x`,lot:id.replace(/^[01]-/,''),name:name||id,auc:id[0]==='0'?'IAAI':'Copart',state:'',ship:'near',repair,price:price||null,doc:'salvage',key:'yes',start:'unknown',flags:[]};}
+try{let m=location.hash.match(/[#&]s=([^&]+)/);
+ if(m){const [who,...items]=m[1].split('*');SHARED={by:decodeURIComponent(who),at:'',lots:items.map(it=>{const [id,r,p,nm]=it.split('_');return fromId(id,(+r||0)*100,p?(+p)*100:null,nm?decodeURIComponent(nm):'');})};}
+ else if(m=location.hash.match(/share=([\w-]+)/)){const d=JSON.parse(b64d(m[1]));SHARED={by:d.by,at:d.at,lots:d.l.map(a=>Object.fromEntries(PACK.map((k,i)=>[k,a[i]])))};}}catch(e){}
+function renderShared(){if(!SHARED)return;const L=SHARED.lots;$('sharedTab').hidden=false;$('sharedName').textContent=SHARED.by;$('sharedN').textContent=`(${L.length})`;
+ $('sharedMeta').textContent=`Список ${SHARED.by}${SHARED.at?' від '+SHARED.at:''}. Максимальні ставки пораховані з вашими налаштуваннями.`;
+ $('sharedList').innerHTML='<tr><th>Лот</th><th class="r">Макс. ставка</th><th class="r">Продано за</th></tr>'+L.map((x,i)=>{
+  const xl=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null,stop=['cert','parts'].includes(x.doc);
+  const b=stop?0:maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:exOf(x),state:x.state,loc:xl?.loc}));
+  return `<tr><td><a href="#" class="sopen" data-i="${i}">${x.name||x.lot}</a>${x.url?` <a class="mut" href="${x.url}" target="_blank" rel="noopener">↗</a>`:''}<div class="mut">${x.auc} · ${x.state||'—'} · ремонт ${fmt(x.repair||0)}</div></td><td class="r"><b class="${b>0?'ok':'bad'}">${b>0?fmt(b):'—'}</b></td><td class="r">${x.price?fmt(x.price):'<span class="mut">—</span>'}</td></tr>`;}).join('');
+ $('sharedList').querySelectorAll('.sopen').forEach(a=>a.onclick=e=>{e.preventDefault();openSaved(L[+a.dataset.i]);});}
+$('copyShared').onclick=()=>{if(!SHARED)return;const L=store.get(),ids=new Set(L.map(x=>String(x.lot||'').replace(/^[01]-/,'')));let n=0;for(const x of SHARED.lots){const id=String(x.lot||'').replace(/^[01]-/,'');if(ids.has(id))continue;ids.add(id);
+ L.push({...x,flags:x.flags||[],extras:exOf(x),stop:['cert','parts'].includes(x.doc)});n++;}store.set(L);$('copyShared').textContent=n?`✓ Додано ${n}`:'✓ Усі вже є';run();};
+// ---- Carfax: дані по лоту (localStorage 'cfx') + сам PDF (IndexedDB) ----
+const cfx={all(){try{return JSON.parse(localStorage.getItem('cfx')||'{}')}catch(e){return {}}},
+ get(id){return this.all()[id]||null},
+ set(id,v){const a=this.all();if(v)a[id]=v;else delete a[id];try{localStorage.setItem('cfx',JSON.stringify(a))}catch(e){}}};
+const idb=(()=>{let p;const db=()=>p||(p=new Promise((ok,no)=>{const r=indexedDB.open('lotcalc',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error);}));
+ const tx=(mode,fn)=>db().then(d=>new Promise((ok,no)=>{const t=d.transaction('files',mode),q=fn(t.objectStore('files'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error);}));
+ return {put:(k,v)=>tx('readwrite',s=>s.put(v,k)),get:k=>tx('readonly',s=>s.get(k)),del:k=>tx('readwrite',s=>s.delete(k))};})();
+const curId=()=>parse($('url').value)?.lot||null;
+const USE={personal:'особисте',rental:'оренда / флот',commercial:'комерційне / таксі',unknown:'невідомо'};
+let cfxEdit=false;
+function renderCfx(){const el=$('cfxBox');if(!el)return;const id=curId();
+ if(!id){el.innerHTML='<span class="mut">Відкрийте лот, щоб додати Carfax.</span>';return;}
+ const d=cfx.get(id);
+ if(d&&!cfxEdit){const bad=(d.acc>1)||d.struct||d.airbag||d.odoIssue||d.use==='rental'||d.use==='commercial';
+  el.innerHTML=`<div class="cfx ${bad?'warnb':'okb'}"><b>${d.acc>1?`⚠️ ДТП: ${d.acc} (є попередні)`:d.acc===1?'✅ ДТП: 1 (лише поточне)':'✅ ДТП не зафіксовано'}</b> · власників: ${d.owners??'?'} · ${USE[d.use||'unknown']}${d.struct?' · <span class="bad">структурні пошкодження</span>':''}${d.airbag?' · <span class="bad">спрацювали подушки</span>':''}${d.odoIssue?' · <span class="bad">проблема з пробігом</span>':''}${d.lastOdo?` · пробіг ${Math.round(d.lastOdo*1.609).toLocaleString('uk-UA')} км`:''}${d.service!=null?` · сервісних записів: ${d.service}`:''}${d.notes?`<div class="mut">${d.notes}</div>`:''}
+   <div class="row" style="margin-top:6px">${d.file?'<button class="chip" id="cfxOpen">📄 Відкрити PDF</button>':''}<button class="chip" id="cfxEditB">✏️ Редагувати</button><button class="chip" id="cfxDel">🗑 Видалити</button></div></div>`;
+  if($('cfxOpen'))$('cfxOpen').onclick=async()=>{const b=await idb.get('cfx-'+id);if(b)window.open(URL.createObjectURL(b),'_blank');};
+  $('cfxEditB').onclick=()=>{cfxEdit=true;renderCfx();};
+  $('cfxDel').onclick=()=>{if(!confirm('Видалити Carfax для цього лота?'))return;cfx.set(id,null);idb.del('cfx-'+id);run();};return;}
+ // Без Carfax — компактно: лише кнопки; форма відкривається після завантаження або «Ввести вручну»
+ if(!d&&!cfxEdit){el.innerHTML=`<div class="row"><label class="chip" style="cursor:pointer">📄 Завантажити Carfax (PDF)<input type="file" id="cfxQuick" accept="application/pdf,.pdf" hidden></label><button class="chip" id="cfxManual">✏️ Ввести вручну</button><span class="mut">Carfax ще не додано</span></div>`;
+  $('cfxManual').onclick=()=>{cfxEdit=true;renderCfx();};
+  $('cfxQuick').onchange=e=>{const f=e.target.files[0];if(!f)return;cfxEdit=true;renderCfx();const inp=$('cfxFile'),dt=new DataTransfer();dt.items.add(f);inp.files=dt.files;inp.dispatchEvent(new Event('change'));};return;}
+ const v=d||{acc:'',owners:'',use:'unknown',service:'',lastOdo:''};
+ el.innerHTML=`<div class="cfx"><div class="row"><label class="chip" style="cursor:pointer">📄 Завантажити Carfax (PDF)<input type="file" id="cfxFile" accept="application/pdf,.pdf" hidden></label><span class="mut" id="cfxMsg">${d?'':'Або заповніть вручну.'}</span></div>
+  <div class="cfxg"><label>ДТП / пошкоджень<input id="cfAcc" type="number" min="0" value="${v.acc??''}"></label><label>Власників<input id="cfOwn" type="number" min="0" value="${v.owners??''}"></label>
+  <label>Використання<select id="cfUse">${Object.entries(USE).map(([k,t])=>`<option value="${k}"${v.use===k?' selected':''}>${t}</option>`).join('')}</select></label>
+  <label>Останній пробіг, миль<input id="cfOdo" type="number" value="${v.lastOdo??''}"></label><label>Сервісних записів<input id="cfSrv" type="number" min="0" value="${v.service??''}"></label></div>
+  <div class="row" style="margin:6px 0"><label class="ck"><input type="checkbox" id="cfStr"${v.struct?' checked':''}> структурні пошкодження</label><label class="ck"><input type="checkbox" id="cfAir"${v.airbag?' checked':''}> спрацювали подушки</label><label class="ck"><input type="checkbox" id="cfOdoI"${v.odoIssue?' checked':''}> проблема з пробігом</label></div>
+  <input id="cfNotes" placeholder="Нотатки (напр. «ДТП 2026-08, перед, легке»)" value="${(v.notes||'').replace(/"/g,'&quot;')}">
+  <div class="row" style="margin-top:6px"><button class="btn" id="cfSave">Зберегти Carfax</button><button class="chip" id="cfCancel">Скасувати</button></div></div>`;
+ $('cfxFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;$('cfxMsg').textContent='Читаю PDF…';
+  try{await idb.put('cfx-'+id,f);const t=await pdfText(f),p=parseCarfax(t);
+   if(p.acc!=null)$('cfAcc').value=p.acc;if(p.owners!=null)$('cfOwn').value=p.owners;if(p.use)$('cfUse').value=p.use;if(p.lastOdo)$('cfOdo').value=p.lastOdo;if(p.service!=null)$('cfSrv').value=p.service;
+   $('cfStr').checked=!!p.struct;$('cfAir').checked=!!p.airbag;$('cfOdoI').checked=!!p.odoIssue;el.dataset.file='1';
+   $('cfxMsg').textContent=`✅ Знайдено: ${Object.keys(p).length} полів. Перевірте й натисніть «Зберегти».`;}
+  catch(err){el.dataset.file='1';$('cfxMsg').textContent='Не вдалося прочитати текст PDF — файл збережено, заповніть поля вручну.';}};
+ $('cfSave').onclick=()=>{const n=x=>x===''?null:+x;cfx.set(id,{acc:n($('cfAcc').value)??0,owners:n($('cfOwn').value),use:$('cfUse').value,lastOdo:n($('cfOdo').value),service:n($('cfSrv').value),
+  struct:$('cfStr').checked,airbag:$('cfAir').checked,odoIssue:$('cfOdoI').checked,notes:$('cfNotes').value.trim(),file:!!(d&&d.file)||el.dataset.file==='1',at:new Date().toISOString().slice(0,10)});
+  delete el.dataset.file;cfxEdit=false;run();};
+ if($('cfCancel'))$('cfCancel').onclick=()=>{cfxEdit=false;renderCfx();};}
+// Текст PDF через pdf.js (вантажиться лише коли потрібен)
+async function pdfText(file){if(!window.pdfjsLib){await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s);});
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+ const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let out='';
+ for(let i=1;i<=doc.numPages;i++){const c=await (await doc.getPage(i)).getTextContent();out+=c.items.map(x=>x.str).join(' ')+'\n';}return out.replace(/\s+/g,' ');}
+// Розбір тексту Carfax: формулювання англійські, як у звіті
+function parseCarfax(t){const r={},num=s=>+String(s).replace(/,/g,'');let m;
+ if(/no (?:accidents?|damage)(?: or damage)? reported/i.test(t))r.acc=0;
+ else if(m=t.match(/(\d+)\s+(?:accidents?|damage(?: reports?)?|accident\/damage reports?)\s+reported/i))r.acc=+m[1];
+ else if(/accident reported|damage reported/i.test(t))r.acc=1;
+ if(m=t.match(/(\d+)\s*-\s*Owner/i)||t.match(/(\d+)\s+(?:Previous\s+)?owners?\b/i))r.owners=+m[1];
+ if(/structural damage/i.test(t)&&!/no structural damage/i.test(t))r.struct=true;
+ if(/airbag[s]? (?:deployed|deployment)/i.test(t)&&!/no airbag/i.test(t))r.airbag=true;
+ if(/rental|fleet vehicle/i.test(t))r.use='rental';else if(/commercial|taxi|livery|ride[- ]share/i.test(t))r.use='commercial';else if(/personal (?:vehicle|lease)/i.test(t))r.use='personal';
+ if(m=t.match(/(\d+)\s+Service history records?/i))r.service=+m[1];
+ if(m=t.match(/([\d,]{2,})\s+Last reported odometer/i)||t.match(/Last reported odometer reading:?\s*([\d,]{2,})/i))r.lastOdo=num(m[1]);
+ if(/odometer (?:rollback|problem|discrepancy|inconsistency)|not actual mileage/i.test(t))r.odoIssue=true;
+ // Carfax українською (перекладений звіт)
+ if(/[А-Яа-яІіЇї]{4}/.test(t)){
+  const ev=[...t.matchAll(/Подія\s+(\d+)/g)].map(x=>+x[1]);
+  if(ev.length)r.acc=Math.max(...ev);else if(/(?:ДТП|пошкоджень?)\s*(?:не|не було)\s*(?:зафіксовано|повідомлено)/i.test(t))r.acc=0;
+  else{const n=(t.match(/Повідомлено про (?:ДТП|пошкодження)/g)||[]).length;if(n)r.acc=n;}
+  if(/з одним власником/i.test(t))r.owners=1;else{const w=[...t.matchAll(/Власник\s+(\d+)/g)].map(x=>+x[1]);if(w.length)r.owners=Math.max(...w);}
+  const rep=(re)=>{const m=t.match(re);return m?!/^\s*(?:\S+\s+){0,30}?Не повідомлялося/i.test(m[1]):null;};
+  const st=t.match(/Структурні пошкодження([\s\S]{0,200})/);if(st&&!/Не повідомлялося|не виявлено/i.test(st[1]))r.struct=true;
+  const ab=t.match(/Спрацювання подушок безпеки([\s\S]{0,120})/);if(ab&&!/Не повідомлялося|не повідомлялось/i.test(ab[1]))r.airbag=true;
+  if(/оренд|прокат/i.test(t))r.use='rental';else if(/комерційн|таксі/i.test(t))r.use='commercial';else if(/особист(?:ий|ому|ого) (?:лізинг|транспорт|автомобіл)/i.test(t))r.use='personal';
+  if(m=t.match(/Останнє зафіксоване значення одометра\s*([\d,]{2,})/))r.lastOdo=num(m[1]);
+  else{const od=[...t.matchAll(/\d{2}\/\d{2}\/\d{4}\s+([\d,]{2,})\s/g)].map(x=>num(x[1])).filter(x=>x<500000);if(od.length)r.lastOdo=Math.max(...od);}
+  const sv=(t.match(/(?:Технічне обслуговування|Сервісн\S* (?:центр|запис)|Обслуговування автомобіля)/gi)||[]).length;if(sv)r.service=sv;else if(m=t.match(/Доступно детальних записів:\s*(\d+)/))r.records=+m[1];
+  if(/(?:відкат\S* одометра|непідтверджен\S* пробіг)(?![^.]{0,20}(?:відсутні|не виявлено))/i.test(t)&&!/Ознаки відкату одометра відсутні/i.test(t))r.odoIssue=true;
+ }
+ return r;}
+
+// ---- Рейтинг лота 0–100 ----
+function lotScore(x,xl){const P=[];const add=(k,v,max,note)=>P.push([k,Math.round(v),max,note||'']);
+ if(x.stop)return {total:0,parts:[['Заборонено ввозити / не реєструється',0,100]]};
+ const b=maxBid(opts({auc:x.auc,ship:x.ship,repair:x.repair||0,extras:x.extras||[],state:x.state,loc:xl?.loc}));
+ // Ціна: наша макс. ставка проти медіани схожих продажів Premium AWD
+ const S=window.SOLD,C=S?.cols||[],rows=(S?.rows||[]).map(r=>Object.fromEntries(C.map((c,i)=>[c,r[i]]))).filter(r=>yearOf(r.vin)===(yearOf(xl?.vin)||2026)&&premiumLike(r.vin)&&(r.vin||'')[7]==='E'&&!notPrem.has(r.lot));
+ const g=xl?dmgGroup(xl.dmg):null,same=rows.filter(r=>dmgGroup(r.dmg)===g),pool=same.length>=5?same:rows,m=pool.length?med(pool.map(r=>r.bid)):null;
+ add('Запас ціни',m?Math.max(0,Math.min(1,(b/m-0.75)/0.35))*25:12,25,m?`макс. ставка ${fmt(b)} проти медіани ${fmt(m)}`:'немає даних');
+ const c=cfx.get(String(x.lot||'').replace(/^[01]-/,''));const km=xl?.odo?xl.odo*1.609:(c?.lastOdo?c.lastOdo*1.609:null);
+ add('Пробіг',km==null?6:km<=5000?15:km<=15000?12:km<=30000?9:km<=50000?5:2,15,km==null?'невідомо':Math.round(km/1000)+' тис. км');
+ add('Стан',(x.start==='run'?10:x.start==='start'?5:x.start==='dead'?0:4)+(x.key==='no'?0:5),15,`${x.start==='run'?'їде':x.start==='start'?'заводиться':x.start==='dead'?'не заводиться':'стан ?'}, ${x.key==='no'?'без ключа':'ключ є'}`);
+ const rp=x.repair||0;add('Ремонт',rp<=1500?10:rp<=3000?8:rp<=5000?5:rp<=7000?3:1,10,fmt(rp));
+ const st=sellerType(xl?.seller);add('Продавець і документ',(st==='ins'?5:st==='dealer'?1:3)+(x.doc==='bos'||x.doc==='unknown'?2:5),10,`${st==='ins'?'страхова':st==='dealer'?'дилер':'інший'}, ${x.doc||'—'}`);
+ if(!c)add('Carfax',12,25,'немає Carfax — нейтральна оцінка');
+ else{// Одне ДТП — те, через яке авто на аукціоні; штрафуємо лише попередні
+  let v=25;v-=c.acc>=3?12:c.acc===2?6:0;if(c.struct)v-=10;if(c.airbag)v-=8;if(c.use==='rental'||c.use==='commercial')v-=4;if(c.odoIssue)v-=10;if((c.owners||0)>1)v-=2;
+  add('Carfax',Math.max(0,v),25,`ДТП ${c.acc||0}${c.acc===1?' (поточне)':c.acc>1?' (є попередні)':''}${c.struct?', структурні':''}${c.airbag?', подушки':''}${c.use&&c.use!=='personal'&&c.use!=='unknown'?', '+USE[c.use]:''}`);}
+ return {total:P.reduce((s,p)=>s+p[1],0),parts:P,cfx:!!c};}
+const scoreBadge=s=>`<span class="score ${s.total>=70?'hi':s.total>=50?'mid':'lo'}" title="${s.parts.map(p=>`${p[0]}: ${p[1]}/${p[2]} — ${p[3]}`).join('&#10;')}">${s.total}${s.cfx?'':'<small>·без Carfax</small>'}</span>`;
+// Сортування за замовчуванням — за часом; вибір «за рейтингом» діє лише до перезавантаження
+let sortBy='time';try{localStorage.removeItem('sortBy')}catch(e){}
+
+function showTab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));}
+// Лот уже в «Моїх лотах»? Шукаємо за номером лота
+const vinOfSaved=x=>{const l=x.lot?findLot({lot:String(x.lot).replace(/^[01]-/,'')}):null;if(l?.vin&&!/^[A-HJ-NPR-Z0-9]{17}$/.test(l.vin))return null;return l?.vin||((x.url||'').match(/\b(7SA[A-Z0-9]{14})\b/i)||[])[1]?.toUpperCase()||null;};
+// Лот уже в списку: той самий номер або той самий VIN (машину перевиставили на іншому аукціоні)
+const savedIdx=(lot,vin)=>{const L=store.get();let i=lot?L.findIndex(x=>String(x.lot||'').replace(/^[01]-/,'')===String(lot)):-1;if(i<0&&vin)i=L.findIndex(x=>vinOfSaved(x)===vin);return i;};
+const curVin=()=>{const r=parse($('url').value);const v=r?(findLot(r)?.vin||r.vin||null):null;return /^[A-HJ-NPR-Z0-9]{17}$/.test(v||'')?v:null;};
+function markAdd(){const r=parse($('url').value),i=savedIdx(r?.lot,curVin());$('add').textContent=i>=0?'✓ Вже в списку':'＋ Додати';$('add').classList.toggle('done',i>=0);}
+$('add').onclick=()=>{const r=parse($('url').value)||{};const L=store.get();
+ if(savedIdx(r.lot,curVin())>=0){showTab('mine');const tr=$('list').querySelector('tr.act');if(tr){tr.scrollIntoView({block:'center',behavior:'smooth'});tr.classList.remove('flash');void tr.offsetWidth;tr.classList.add('flash');}return;}
+ L.push({url:$('url').value.trim(),lot:r.lot,name:$('name').value.trim(),auc:$('auc').value,state:$('state').value,ship,repair:n('repair'),doc:$('doc').value,key:keyS,start:startS,flags:[...flags],extras:risk().ex,stop:risk().stop});
+ store.set(L);$('url').value='';$('name').value='';$('info').innerHTML='';$('links').innerHTML='';renderList();showTab('mine');};
+$('url').addEventListener('input',onUrl);
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>showTab(t.dataset.t));
+chips($('sortChips'),[['🕒 За часом','time'],['🏆 За рейтингом','score']],v=>{sortBy=v;},v=>sortBy===v);
+if(SHARED){renderShared();showTab('shared');}else showTab('mine');
+if(innerWidth<560)$('brd').open=false;
+document.querySelectorAll('input:not(#url),select:not(#state):not(#doc)').forEach(e=>e.addEventListener('input',run));
+run();
+// Закладка: код береться з grab.js
+fetch('grab.js?v='+Date.now()).then(r=>r.text()).then(t=>{$('bmk').href='javascript:'+encodeURIComponent(t.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\n\s*/g,''));}).catch(()=>{});
+// Лот, щойно доданий закладкою, — відкриваємо
+if(window.__added){const a=window.__added;$('url').value=`https://bid.cars/ua/lot/${a.lot}/${(a.vin||'').includes('?')?'x':(a.vin||'x')}`;onUrl();}
+</script></body></html>
