@@ -17,14 +17,16 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.5 -apple-system
 .it img,.it .ni{width:84px;height:63px;object-fit:cover;border-radius:8px;background:var(--chip)}
 .it .t{font-weight:700;font-size:13px}.it .s{font-size:12px;color:var(--mut);line-height:1.35}
 .main{overflow:auto;padding:20px 24px}
-.box{max-width:900px;margin:0 auto}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
-h1{font-size:20px;margin:0 0 4px}h2{font-size:16px;margin:0 0 12px}
+.box{max-width:1000px;margin:0 auto}
+.top{display:grid;grid-template-columns:400px minmax(0,1fr);gap:16px}
+@media (max-width:1100px){.top{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+h1{font-size:17px;margin:0 0 2px}h2{font-size:16px;margin:0 0 12px}
 .mut{color:var(--mut);font-size:12.5px}
 .gal{display:grid;grid-template-columns:1fr;gap:8px}
 .gal .big{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:var(--chip)}
-.thumbs{display:flex;gap:6px;overflow-x:auto}.thumbs img{width:76px;height:57px;object-fit:cover;border-radius:6px;cursor:pointer;opacity:.75}.thumbs img.on{opacity:1;outline:2px solid var(--acc)}
-.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 16px;margin-top:12px}
+.thumbs{display:flex;gap:6px;overflow-x:auto}.thumbs{flex-wrap:wrap}.thumbs img{width:58px;height:44px;object-fit:cover;border-radius:6px;cursor:pointer;opacity:.75}.thumbs img.on{opacity:1;outline:2px solid var(--acc)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px}
 .facts div b{display:block;font-size:11.5px;color:var(--mut);font-weight:600}
 .links a{margin-right:12px;color:var(--acc);font-weight:600;text-decoration:none}
 .note{margin-top:10px;padding:8px 10px;border-radius:8px;background:rgba(217,119,6,.12);color:var(--warn);font-size:13px}
@@ -82,8 +84,8 @@ function open(lot){cur=rows.find(r=>r.lot===lot)||L.rows.map(a=>Object.fromEntri
 function renderView(){const r=cur,n=(L.photos||{})[r.lot]||1,st=r.st||(r.loc||'').match(/\(([A-Z]{2})\)/)?.[1]||'',mi=miles(st),ld=land(r),s=S[r.lot]||{};
  const links=[r.lot[0]==='1'?['Copart',`https://www.copart.com/lot/${r.lot.slice(2)}`]:['IAAI',(L.iaai||{})[r.lot]?`https://www.iaai.com/VehicleDetail/${L.iaai[r.lot]}~US`:`https://www.iaai.com/Search?Keyword=${r.lot.slice(2)}`],['bid.cars',`https://bid.cars/ua/lot/${r.lot}/${(r.vin||'').includes('?')?'x':r.vin}`]];
  $('view').innerHTML=`<div class="card"><h1>${r.yr} Tesla Model Y · ${auc(r)} ${r.lot.slice(2)}</h1><div class="mut">VIN ${r.vin||'—'}</div>
-  <div class="gal" style="margin-top:12px">${img(r)?`<img class="big" id="big" src="${img(r)}">`:''}${n>1?`<div class="thumbs">${Array.from({length:n},(_,i)=>`<img src="${img(r,i+1)}" data-i="${i+1}" class="${i?'':'on'}" onerror="this.remove()">`).join('')}</div>`:''}</div>
-  <div class="facts">
+  <div class="top" style="margin-top:10px"><div class="gal">${img(r)?`<img class="big" id="big" src="${img(r)}">`:''}${n>1?`<div class="thumbs">${Array.from({length:n},(_,i)=>`<img src="${img(r,i+1)}" data-i="${i+1}" class="${i?'':'on'}" onerror="this.remove()">`).join('')}</div>`:''}</div>
+  <div><div class="facts">
    <div><b>Торги</b>${r.close?r.close.replace(' GMT+2',' (Київ)'):'не призначено'}</div><div><b>Майданчик</b>${r.loc||'—'}</div>
    <div><b>Пошкодження</b>${r.dmg||'—'}</div><div><b>Пробіг</b>${r.odo!=null?r.odo.toLocaleString('uk-UA')+' миль ('+Math.round(r.odo*1.609).toLocaleString('uk-UA')+' км)':'—'}</div>
    <div><b>Документ</b>${r.docFull||r.doc||'невідомо'}</div><div><b>Ключ</b>${r.key==='Present'?'<span class="ok">є</span>':r.key==='Missing'?'<span class="bad">немає</span>':'—'}</div>
@@ -91,7 +93,7 @@ function renderView(){const r=cur,n=(L.photos||{})[r.lot]||1,st=r.st||(r.loc||''
    ${r.estMin?`<div><b>Оцінка bid.cars</b>${fmt(r.estMin)} – ${fmt(r.estMax)}</div>`:''}
   </div>
   ${(L.notes||{})[r.lot]?`<div class="note">${L.notes[r.lot]}</div>`:''}
-  <div class="links" style="margin-top:12px">${links.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('')}</div></div>
+  <div class="links" style="margin-top:12px">${links.map(([t,h])=>`<a href="${h}" target="_blank" rel="noopener">${t} ↗</a>`).join('')}</div></div></div></div>
  <div class="card"><h2>Розрахунок</h2><table>
   <tr><td class="n">1</td><td>Вартість лоту</td><td class="v"><input id="c_bid" type="number" step="100" value="${s.bid??''}" placeholder="ставка"></td></tr>
   <tr><td class="n">2</td><td>Штат<div class="h">${st||'—'}${mi!=null?` · ~${mi.toLocaleString('uk-UA')} миль до Нью-Йорка (порт)`:''}</div></td><td class="v">${st||'—'}</td></tr>
