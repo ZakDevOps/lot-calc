@@ -43,3 +43,9 @@ window.LOTS.rows.push(["0-46562236","7SAYGDED7VF??????","2027 Tesla Model Y",701
 Object.assign(window.LOTS.firstSeen,{"0-46562236":"2026-11-15"});
 Object.assign(window.LOTS.notes,{"0-46562236":"Дані з IAAI: 2027 модельний рік, задній привід (RWD), не заводиться, без ключа, документ «Wait Title», аукціон ще не призначено; ACV $48,000"});
 Object.assign(window.LOTS.iaai,{"0-46562236":"47062684"});
+
+// 2026-11-17: лот за посиланням користувача
+window.LOTS.rows.push(["1-70354186","7SAYGDED3TA490277","2026 Tesla MODEL Y",12787,"Atlanta East (GA)","Rear end","Salvage (GA)","CERT OF TITLE-SALVAGE (GA)","Present",null,"Insurance Company",16750,24360,"Wed 18 Nov, 17:00 GMT+2","https://images.bid.cars/170354186_6afb61218e8c7/2026-Tesla-MODEL-Y-7SAYGDED3TA490277-1.jpg"]);
+Object.assign(window.LOTS.firstSeen,{"1-70354186":"2026-11-17"});
+Object.assign(window.LOTS.photos,{"1-70354186":13});
+Object.assign(window.LOTS.notes,{"1-70354186":"Premium RWD (задній привід). ACV $47,606; стан запуску невідомий; ставка $400 на 17.11"});
