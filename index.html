@@ -228,7 +228,7 @@ details summary{cursor:pointer;color:var(--mut);font-size:12.5px;font-weight:700
 </main>
 <script src="caucasus.js?v=202611142236"></script>
 <script src="sold.js?v=202611142236"></script>
-<script src="lots.js?v=202611171900"></script>
+<script src="lots.js?v=202611171930"></script>
 <script>
 // Фото IAAI-лотів (номер 0-…) bid.cars віддає з mercury.bid.cars; на images.bid.cars там лише заглушка
 if(window.LOTS)window.LOTS.rows.forEach(r=>{if(r[0][0]==='0'&&r[14]&&/images\.bid\.cars/.test(r[14])){const f=r[14].replace(/\?.*$/,'').split('/').pop();r[14]=`https://mercury.bid.cars/${r[0]}/${f}`;}});
