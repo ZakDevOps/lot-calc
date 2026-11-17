@@ -12,6 +12,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.5 -apple-system
 .lhead input{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit}
 .lhead .mut{margin-top:6px}
 .items{overflow:auto;flex:1}
+.mks{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.mb{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:99px;padding:4px 10px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}.mb span{color:var(--mut);font-weight:500}.mb.on{background:var(--acc);border-color:var(--acc);color:#fff}.mb.on span{color:#dfe0ff}
 .it{display:grid;grid-template-columns:84px 1fr;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);cursor:pointer}
 .it:hover{background:var(--bg)}.it.act{background:rgba(79,70,229,.14)}
 .it img,.it .ni{width:84px;height:63px;object-fit:cover;border-radius:8px;background:var(--chip)}
@@ -44,13 +45,13 @@ tr.tot td{border:0;font-size:18px;font-weight:800;padding-top:14px}
 </style></head><body>
 <div class="wrap">
  <aside class="list">
-  <div class="lhead"><input id="q" placeholder="Пошук: номер лота, VIN, посилання, штат"><div class="mut" id="cnt"></div></div>
+  <div class="lhead"><input id="q" placeholder="Пошук: номер лота, VIN, посилання, штат"><div id="mk" class="mks"></div><div class="mut" id="cnt"></div></div>
   <div class="items" id="items"></div>
  </aside>
  <section class="main"><div class="box" id="view"><div class="empty">Виберіть машину зі списку зліва</div></div></section>
 </div>
 <script src="caucasus.js?v=202611171"></script>
-<script src="lots.js?v=202611172100"></script>
+<script src="lots.js?v=202611172200"></script>
 <script>
 const $=id=>document.getElementById(id),L=window.LOTS,C=L.cols;
 const fmt=v=>'$'+Math.round(v||0).toLocaleString('uk-UA');
@@ -68,22 +69,24 @@ function land(r){const st=(r.loc.match(/\(([A-Z]{2})\)/)||[])[1],city=r.loc.repl
  const mi=miles(st);if(mi==null)return {v:800,how:'майданчик невідомий'};return {v:Math.round(Math.max(300,mi*0.45)/10)*10,how:'оцінка за відстанню'};}
 function fee(auc,p){const t=window.CAUCASUS.fees[auc];if(p<=t[0][0])return t[0][1];for(let i=1;i<t.length;i++)if(p<=t[i][0]){const[x0,y0]=t[i-1],[x1,y1]=t[i];return y0+(y1-y0)*(p-x0)/(x1-x0);}const[x0,y0]=t.at(-2),[x1,y1]=t.at(-1);return y1+(y1-y0)*(p-x1)/(x1-x0);}
 
-const rows=L.rows.map(a=>Object.fromEntries(C.map((c,i)=>[c,a[i]]))).filter(r=>{const v=r.vin||'';return v[7]==='E'&&/^(2025|2026)/.test(r.name||'2026')&&(v[9]==='S'||v[5]==='D');});
-rows.forEach(r=>{r.t=when(r.close);r.st=(r.loc||'').match(/\(([A-Z]{2})\)/)?.[1]||'';r.yr=({S:2025,T:2026})[(r.vin||'')[9]]||'';});
+const makeOf=r=>/^7SA|^5YJ/.test(r.vin||'')||/tesla/i.test(r.name||'')?'Tesla':((r.name||'').match(/^\d{4}\s+(\S+)/)||[])[1]||'Інше';
+const rows=L.rows.map(a=>Object.fromEntries(C.map((c,i)=>[c,a[i]]))).filter(r=>{const v=r.vin||'';if(makeOf(r)!=='Tesla')return true;return v[7]==='E'&&/^(2025|2026)/.test(r.name||'2026')&&(v[9]==='S'||v[5]==='D');});
+rows.forEach(r=>{r.t=when(r.close);r.st=(r.loc||'').match(/\(([A-Z]{2})\)/)?.[1]||'';r.make=makeOf(r);r.yr=({N:2022,P:2023,R:2024,S:2025,T:2026,V:2027})[(r.vin||'')[9]]||(r.name||'').slice(0,4);r.title=r.make==='Tesla'?'Tesla Model Y':(r.name||'').replace(/^\d{4}\s+/,'');});
 rows.sort((a,b)=>(a.t?0:1)-(b.t?0:1)||(a.t&&b.t?a.t-b.t:0));
-const now=Date.now();let cur=null;
+const now=Date.now();let cur=null,mk=localStorage.getItem('make')||'all';
 const S=JSON.parse(localStorage.getItem('calc2')||'{}');const save=()=>localStorage.setItem('calc2',JSON.stringify(S));
 const img=(r,i=1)=>r.img?(i===1?r.img:r.img.replace(/-1\.jpg$/,`-${i}.jpg`)):null;
 const auc=r=>r.lot[0]==='1'?'Copart':'IAAI';
 function renderList(){const q=$('q').value.trim().toLowerCase().replace(/^.*\/lot\//,'').split('/')[0];
- const list=rows.filter(r=>(!r.t||r.t>now-3*3600e3)&&(!q||[r.lot,r.vin,r.loc,r.lot.slice(2)].some(x=>(x||'').toLowerCase().includes(q))));
- $('cnt').textContent=`${list.length} машин · AWD, Premium, 2025–2026 · найближчі торги зверху`;
- $('items').innerHTML=list.map(r=>`<div class="it${cur===r?' act':''}" data-l="${r.lot}">${img(r)?`<img loading="lazy" src="${img(r)}" onerror="this.style.visibility='hidden'">`:'<div class="ni"></div>'}<div><div class="t">${r.yr} · ${auc(r)} ${r.lot.slice(2)}</div><div class="s">${r.loc||''}<br>${r.dmg||''} · ${r.odo!=null?r.odo.toLocaleString('uk-UA')+' mi':''}<br>${r.close?r.close.replace(' GMT+2',''):'торги не призначено'}</div></div></div>`).join('')||'<div class="empty">Нічого не знайдено</div>';
+ const list=rows.filter(r=>(mk==='all'||r.make===mk)&&(!r.t||r.t>now-3*3600e3)&&(!q||[r.lot,r.vin,r.loc,r.lot.slice(2)].some(x=>(x||'').toLowerCase().includes(q))));
+ const M=[...new Set(rows.map(r=>r.make))];$('mk').innerHTML=['all',...M].map(m=>`<button class="mb${m===mk?' on':''}" data-m="${m}">${m==='all'?'Усі':m} <span>${m==='all'?rows.length:rows.filter(r=>r.make===m).length}</span></button>`).join('');$('mk').querySelectorAll('button').forEach(b=>b.onclick=()=>{mk=b.dataset.m;localStorage.setItem('make',mk);renderList();});
+ $('cnt').textContent=`${list.length} машин · Tesla: AWD, Premium, 2025–2026 · найближчі торги зверху`;
+ $('items').innerHTML=list.map(r=>`<div class="it${cur===r?' act':''}" data-l="${r.lot}">${img(r)?`<img loading="lazy" src="${img(r)}" onerror="this.style.visibility='hidden'">`:'<div class="ni"></div>'}<div><div class="t">${r.yr} ${r.make==='Tesla'?'':r.title+' '}· ${auc(r)} ${r.lot.slice(2)}</div><div class="s">${r.loc||''}<br>${r.dmg||''} · ${r.odo!=null?r.odo.toLocaleString('uk-UA')+' mi':''}<br>${r.close?r.close.replace(' GMT+2',''):'торги не призначено'}</div></div></div>`).join('')||'<div class="empty">Нічого не знайдено</div>';
  $('items').querySelectorAll('.it').forEach(e=>e.onclick=()=>open(e.dataset.l));}
 function open(lot){cur=rows.find(r=>r.lot===lot)||L.rows.map(a=>Object.fromEntries(C.map((c,i)=>[c,a[i]]))).find(r=>r.lot===lot);if(!cur)return;location.hash=lot;renderList();renderView();}
 function renderView(){const r=cur,n=(L.photos||{})[r.lot]||1,st=r.st||(r.loc||'').match(/\(([A-Z]{2})\)/)?.[1]||'',mi=miles(st),ld=land(r),s=S[r.lot]||{};
  const links=[r.lot[0]==='1'?['Copart',`https://www.copart.com/lot/${r.lot.slice(2)}`]:['IAAI',(L.iaai||{})[r.lot]?`https://www.iaai.com/VehicleDetail/${L.iaai[r.lot]}~US`:`https://www.iaai.com/Search?Keyword=${r.lot.slice(2)}`],['bid.cars',`https://bid.cars/ua/lot/${r.lot}/${(r.vin||'').includes('?')?'x':r.vin}`]];
- $('view').innerHTML=`<div class="card"><h1>${r.yr} Tesla Model Y · ${auc(r)} ${r.lot.slice(2)}</h1><div class="mut">VIN ${r.vin||'—'}</div>
+ $('view').innerHTML=`<div class="card"><h1>${r.yr} ${r.title} · ${auc(r)} ${r.lot.slice(2)}</h1><div class="mut">VIN ${r.vin||'—'}</div>
   <div class="top" style="margin-top:10px"><div class="gal">${img(r)?`<img class="big" id="big" src="${img(r)}">`:''}${n>1?`<div class="thumbs">${Array.from({length:n},(_,i)=>`<img src="${img(r,i+1)}" data-i="${i+1}" class="${i?'':'on'}" onerror="this.remove()">`).join('')}</div>`:''}</div>
   <div><div class="facts">
    <div><b>Торги</b>${r.close?r.close.replace(' GMT+2',' (Київ)'):'не призначено'}</div><div><b>Майданчик</b>${r.loc||'—'}</div>

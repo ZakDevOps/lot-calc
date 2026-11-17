@@ -45,3 +45,9 @@ window.LOTS.iaai=Object.assign(window.LOTS.iaai||{},{"0-46627559": "47128057", "
  Object.assign(r,{1:"7SAYGDEE3TF561862",4:"Seattle (WA)",5:"Rear end",6:"Bill of sale (WA)",7:"BILL OF SALE (WA)",10:"Progressive Casualty Insurance",11:17130,12:24930,13:"Wed 18 Nov, 19:30 GMT+2",14:"https://images.bid.cars/046203351_6afc281161b0b/2026-Tesla-Model-Y-7SAYGDEE3TF561862-1.jpg"});
  window.LOTS.photos["0-46203351"]=16;
  window.LOTS.notes["0-46203351"]="Bill of sale (WA) — без титулу: bid.cars не рекомендує (складно вивезти/зареєструвати). Удар лівий задній; ACV $48,707, ERC $27,251";})();
+
+// 2026-11-17: Audi e-tron за посиланням користувача
+window.LOTS.rows.push(["1-74077786","WA1VABGE2PB025765","2023 Audi e-tron Chronos",41247,"Mebane (NC)","Front end","Salvage (NC)","SALVAGE CERTIFICATE OF TITLE (NC)","Present","Run / Drive","Geico",18130,23570,"Wed 18 Nov, 16:00 GMT+2","https://images.bid.cars/174077786_6af65369dd627/2023-Audi-E-Tron-WA1VABGE2PB025765-1.jpg"]);
+Object.assign(window.LOTS.firstSeen,{"1-74077786":"2026-11-17"});
+Object.assign(window.LOTS.photos,{"1-74077786":13});
+Object.assign(window.LOTS.notes,{"1-74077786":"ACV $34,311, ERC $27,773; ставка $3,800 на 17.11"});
